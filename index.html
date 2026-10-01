@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>CNH — Área de Avulsos</title>
-  <!-- Firebase -->
+<!-- Firebase -->
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
 <script>
@@ -17,19 +17,18 @@ const firebaseConfig = {
   messagingSenderId: "798608632538",
   appId: "1:798608632538:web:a02d37f4eb77f7a01993e3"
 };
-
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 </script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;font-family:Arial,sans-serif}
 body{background:#1a1a1a;color:#eee}
-.sidebar{width:240px;background:#000;position:fixed;height:100vh;left:0;top:0;padding-top:20px}
+.sidebar{width:240px;background:#000;position:fixed;height:100vh;left:0;top:0;padding-top:20px;z-index:99}
 .sidebar h1{color:#FFB800;padding:0 20px 10px;font-size:22px}
 .sidebar p{color:#888;padding:0 20px 20px;font-size:13px}
 .sidebar button{width:100%;background:transparent;border:none;color:#ccc;padding:14px 20px;text-align:left;cursor:pointer;font-size:15px;border-left:3px solid transparent}
 .sidebar button:hover,.sidebar button.ativo{background:#222;border-left-color:#FFB800;color:#fff}
-.conteudo{margin-left:240px;padding:20px}
+.conteudo{margin-left:240px;padding:20px;padding-top:60px}
 .pagina{display:none}
 .pagina.ativa{display:block}
 .fileira{display:grid;grid-template-columns:repeat(4,1fr);gap:15px;margin-bottom:20px}
@@ -74,13 +73,25 @@ textarea.bipagem{min-height:120px;font-size:14px}
 .card-resumo{background:#222;padding:10px;border-radius:6px;text-align:center}
 .card-resumo .num{font-size:24px;font-weight:bold;color:#FFB800}
 hr{border:none;border-top:1px solid #444;margin:12px 0}
+.status-sinc{position:fixed;top:10px;right:10px;padding:6px 12px;border-radius:20px;font-size:12px;font-weight:bold;z-index:999}
+.sinc-conectado{background:rgba(0,200,83,.2);color:#69F0AE;border:1px solid #00C853}
+.sinc-desconectado{background:rgba(255,61,0,.2);color:#FF6E40;border:1px solid #FF3D00}
+.btn-menu{display:none;position:fixed;top:10px;left:10px;z-index:998;background:#FFB800;border:none;padding:8px 12px;border-radius:4px;font-weight:bold;cursor:pointer}
+@media(max-width:768px){
+  .btn-menu{display:block}
+  .sidebar{transform:translateX(-100%);transition:transform .3s}
+  .sidebar.aberto{transform:translateX(0)}
+  .conteudo{margin-left:0}
+  .fileira{grid-template-columns:repeat(2,1fr)}
+}
 </style>
 </head>
 <body>
-
-<div class="sidebar">
+<div id="statusSinc" class="status-sinc sinc-desconectado">⏳ Conectando...</div>
+<button class="btn-menu" onclick="toggleMenu()">☰</button>
+<div class="sidebar" id="barraLateral">
   <h1>CNH</h1>
-  <p>Área de Avulsos</p>
+  <p>Área de Avulsos — Tempo Real</p>
   <button onclick="abrirPagina('painel')" id="btn-painel" class="ativo">📊 Painel</button>
   <button onclick="abrirPagina('cadastrar')" id="btn-cadastrar">📄 Cadastrar Protocolos</button>
   <button onclick="abrirPagina('lista')" id="btn-lista">📑 Protocolos</button>
@@ -90,11 +101,10 @@ hr{border:none;border-top:1px solid #444;margin:12px 0}
   <button onclick="abrirPagina('saidas')" id="btn-saidas">🚚 Separação e Baixa</button>
   <button onclick="abrirPagina('inventario')" id="btn-inventario">📋 Inventário</button>
 </div>
-
 <div class="conteudo">
-  <!-- PAINEL -->
+    <!-- PAINEL -->
   <div id="pag-painel" class="pagina ativa">
-    <h2 style="margin-bottom:20px">Gestão de Avulsos e Expedição</h2>
+    <h2 style="margin-bottom:20px">Gestão de Avulsos e Expedição <span style="font-size:14px;color:#00C853">🔄 Tempo Real</span></h2>
     <div class="fileira">
       <div class="cartao"><h3>Protocolos</h3><div class="valor" id="qtdProtocolo">0</div></div>
       <div class="cartao"><h3>Itens Pendentes</h3><div class="valor" id="qtdPendente">0</div></div>
@@ -149,7 +159,7 @@ hr{border:none;border-top:1px solid #444;margin:12px 0}
       <button onclick="filtrarProtocolos('DUAL')">DUAL</button>
       <button onclick="filtrarProtocolos('GPS')">GPS</button>
     </div>
-    <div class="cartao" id="listaProtocolos">Nenhum protocolo cadastrado.</div>
+    <div class="cartao" id="listaProtocolos">Carregando...</div>
   </div>
 
   <!-- RECEBIMENTO -->
@@ -171,7 +181,7 @@ hr{border:none;border-top:1px solid #444;margin:12px 0}
         <button class="botao-cinza" onclick="limparBipagem()">🗑️ LIMPAR</button>
         <p style="margin:10px 0">Pendentes: <span id="contPendente">0</span> | Recebidos: <span id="contRecebido">0</span></p>
         <h3>Itens:</h3>
-        <div id="listaRecebimento"></div>
+        <div id="listaRecebimento">Carregando...</div>
       </div>
     </div>
     <div id="aba-rec-manual" style="display:none">
@@ -193,17 +203,14 @@ hr{border:none;border-top:1px solid #444;margin:12px 0}
       </div>
     </div>
   </div>
-
-  <!-- ESTOQUE — COM IMPORTAÇÃO EXCEL -->
+    <!-- ESTOQUE -->
   <div id="pag-estoque" class="pagina">
     <h2 style="margin-bottom:15px">📦 Estoque</h2>
     <div class="cartao">
       <div class="aviso-amarelo">📥 Importar em Massa: ETIQUETA|CHASSI|TIPO|MODELO|LOCALIZAÇÃO (um por linha)</div>
       <textarea id="importaMassa" rows="4" placeholder="CX01-R8929|HCCZ...|KIT|KIT EIXO|RUA 01&#10;DD-R8929|HCCZ...|DUAL|PNEU 480|RUA 02"></textarea>
       <button class="botao-verde" onclick="importarEstoqueEmMassa()">📥 IMPORTAR TEXTO</button>
-      <button class="botao-azul" onclick="baixarLayoutExcel()">📄 BAIXAR LAYOUT EXCEL</button>
-      <button class="botao-amarelo" onclick="document.getElementById('arquivoExcel').click()">📂 IMPORTAR DO EXCEL</button>
-      <input type="file" id="arquivoExcel" accept=".csv,.txt" style="display:none" onchange="importarDoExcel(event)">
+      <button class="botao-azul" onclick="baixarLayoutExcel()">📄 BAIXAR LAYOUT</button>
       <hr>
       <input type="text" placeholder="🔍 Buscar..." id="buscaEstoque" oninput="filtrarEstoque()">
       <select id="filtroTipoEstoque" onchange="filtrarEstoque()">
@@ -218,10 +225,11 @@ hr{border:none;border-top:1px solid #444;margin:12px 0}
       <button class="botao-verde" onclick="exportarSelecionadosEstoque()">📤 Exportar Selecionados</button>
       <button class="botao-cinza" onclick="exportarTodoEstoque()">📤 Exportar Tudo</button>
       <p style="margin:10px 0">Total: <span id="totalEstoque">0</span></p>
-      <div id="listaEstoque"></div>
+      <div id="listaEstoque">Carregando...</div>
     </div>
   </div>
-  <!-- PROGRAMAÇÃO — SEM BIPAGEM, SÓ ENVIA P/ SAÍDAS -->
+
+  <!-- PROGRAMAÇÃO -->
   <div id="pag-programacao" class="pagina">
     <h2 style="margin-bottom:15px">📋 Programação de Embarque</h2>
     <div class="cartao">
@@ -243,12 +251,12 @@ hr{border:none;border-top:1px solid #444;margin:12px 0}
         <h3>Itens da Programação:</h3>
         <div id="listaProgramacao"></div>
         <br>
-        <button class="botao-verde" style="font-size:16px;padding:12px 24px" onclick="confirmarProgramacao()">✅ ENVIAR P/ SAÍDAS (Sem baixa do Estoque)</button>
+        <button class="botao-verde" style="font-size:16px;padding:12px 24px" onclick="confirmarProgramacao()">✅ ENVIAR P/ SAÍDAS</button>
       </div>
     </div>
   </div>
 
-  <!-- SAÍDAS — AQUI BIPA E DÁ BAIXA NO ESTOQUE -->
+  <!-- SAÍDAS -->
   <div id="pag-saidas" class="pagina">
     <h2 style="margin-bottom:15px">🚚 Separação e Baixa</h2>
     <div class="cartao">
@@ -258,8 +266,8 @@ hr{border:none;border-top:1px solid #444;margin:12px 0}
         <button onclick="filtrarSaidas('KIT')">📦 KITS</button>
         <button onclick="filtrarSaidas('GPS')">📡 GPS / PEN</button>
       </div>
-      <div class="aviso-vermelho">🔴 É OBRIGATÓRIO BIPAR TODAS AS ETIQUETAS PARA DAR BAIXA NO ESTOQUE!</div>
-      <label style="color:#FFB800; font-weight:bold">Bipe as etiquetas abaixo (código EXATO letra por letra):</label>
+      <div class="aviso-vermelho">🔴 É OBRIGATÓRIO BIPAR TODAS AS ETIQUETAS PARA DAR BAIXA!</div>
+      <label style="color:#FFB800; font-weight:bold">Bipe as etiquetas abaixo:</label>
       <textarea id="bipagemSaida" class="bipagem" placeholder="CX01-R8929&#10;DD-R8929" oninput="marcarSeparadosSaida()"></textarea>
       <div class="resumo-prog">
         <div class="card-resumo"><div class="num" id="saidaTotal">0</div><div>Itens</div></div>
@@ -267,9 +275,9 @@ hr{border:none;border-top:1px solid #444;margin:12px 0}
         <div class="card-resumo" style="background:rgba(0,200,83,.15)"><div class="num" id="saidaBipado">0</div><div>✅ Bipados</div></div>
       </div>
       <h3>Itens a Separar:</h3>
-      <div id="listaSaidasProgramadas"></div>
+      <div id="listaSaidasProgramadas">Carregando...</div>
       <br>
-      <button class="botao-verde" style="font-size:16px;padding:12px 24px" onclick="confirmarBaixaEstoque()">✅ CONFIRMAR BAIXA — SÓ FUNCIONA SE TODOS FOREM BIPADOS</button>
+      <button class="botao-verde" style="font-size:16px;padding:12px 24px" onclick="confirmarBaixaEstoque()">✅ CONFIRMAR BAIXA</button>
     </div>
   </div>
 
@@ -285,12 +293,12 @@ hr{border:none;border-top:1px solid #444;margin:12px 0}
       <h3 id="tipoInv">🛞 DUAL</h3>
       <label>🔍 Bipe ou cole as etiquetas inventariadas:</label>
       <textarea id="caixaInventario" class="bipagem" placeholder="DD-R8929&#10;CX01-R8929"></textarea>
-      <label>📍 Nova Localização (atualiza no Estoque):</label>
+      <label>📍 Nova Localização:</label>
       <input type="text" id="locInventario" placeholder="Ex: RUA 05 — B08">
-      <button class="botao-verde" onclick="processarInventario()">✅ INVENTARIAR E ATUALIZAR LOCALIZAÇÃO</button>
-      <button class="botao-azul" onclick="exportarInventario()">📤 EXPORTAR INVENTÁRIO</button>
+      <button class="botao-verde" onclick="processarInventario()">✅ INVENTARIAR</button>
+      <button class="botao-azul" onclick="exportarInventario()">📤 EXPORTAR</button>
       <h3 style="margin:15px 0 8px">Itens em Estoque:</h3>
-      <div id="listaInventario"></div>
+      <div id="listaInventario">Carregando...</div>
     </div>
   </div>
 </div>
@@ -298,8 +306,8 @@ hr{border:none;border-top:1px solid #444;margin:12px 0}
 let protocolosSalvos = [];
 let estoque = [];
 let historicoSaidas = [];
-let filtroAtivo = 'TODOS';
 let listaProgramacaoAtual = [];
+let filtroAtivo = 'TODOS';
 let filtroSaidas = 'TODOS';
 let estoqueSelecionados = new Set();
 let inventarioSelecionadoTipo = 'DUAL';
@@ -308,28 +316,63 @@ const CODIGO_PEN_DRIVE = '47962967';
 function dataHoje(){
   return new Date().toLocaleDateString('pt-BR');
 }
-function salvarDados(){
-  localStorage.setItem('cnh_protocolos', JSON.stringify(protocolosSalvos));
-  localStorage.setItem('cnh_estoque', JSON.stringify(estoque));
-  localStorage.setItem('cnh_saidas', JSON.stringify(historicoSaidas));
-  localStorage.setItem('cnh_programacao', JSON.stringify(listaProgramacaoAtual));
-  atualizarPainel();
+function toggleMenu(){
+  document.getElementById('barraLateral').classList.toggle('aberto');
 }
-function carregarDados(){
-  const p = localStorage.getItem('cnh_protocolos');
-  const e = localStorage.getItem('cnh_estoque');
-  const s = localStorage.getItem('cnh_saidas');
-  const prog = localStorage.getItem('cnh_programacao');
-  if(p) protocolosSalvos = JSON.parse(p);
-  if(e) estoque = JSON.parse(e);
-  if(s) historicoSaidas = JSON.parse(s);
-  if(prog) listaProgramacaoAtual = JSON.parse(prog);
+
+// ========== FIREBASE — SALVAR E CARREGAR ==========
+async function salvarDados(){
+  await db.ref('protocolos').set(protocolosSalvos);
+  await db.ref('estoque').set(estoque);
+  await db.ref('saidas').set(historicoSaidas);
+  await db.ref('programacao').set(listaProgramacaoAtual);
 }
+
+function configurarListeners(){
+  db.ref('.info/connected').on('value', snap=>{
+    const conectado = snap.val();
+    const el = document.getElementById('statusSinc');
+    if(conectado){
+      el.textContent = '✅ Sincronizado';
+      el.className = 'status-sinc sinc-conectado';
+    } else {
+      el.textContent = '🔴 Desconectado';
+      el.className = 'status-sinc sinc-desconectado';
+    }
+  });
+
+  db.ref('protocolos').on('value', snap=>{
+    protocolosSalvos = snap.val() || [];
+    atualizarPainel();
+    if(document.getElementById('pag-lista').classList.contains('ativa')) renderizarListaProtocolos();
+    if(document.getElementById('pag-recebimento').classList.contains('ativa')) renderizarListaRecebimento();
+  });
+
+  db.ref('estoque').on('value', snap=>{
+    estoque = snap.val() || [];
+    atualizarPainel();
+    if(document.getElementById('pag-estoque').classList.contains('ativa')) renderizarEstoque();
+    if(document.getElementById('pag-inventario').classList.contains('ativa')) renderizarInventario();
+  });
+
+  db.ref('saidas').on('value', snap=>{
+    historicoSaidas = snap.val() || [];
+    atualizarPainel();
+  });
+
+  db.ref('programacao').on('value', snap=>{
+    listaProgramacaoAtual = snap.val() || [];
+    atualizarPainel();
+    if(document.getElementById('pag-saidas').classList.contains('ativa')) renderizarSaidasBaixa();
+  });
+}
+
 function abrirPagina(nome){
   document.querySelectorAll('.pagina').forEach(p=>p.classList.remove('ativa'));
   document.querySelectorAll('.sidebar button').forEach(b=>b.classList.remove('ativo'));
   document.getElementById('pag-'+nome).classList.add('ativa');
   document.getElementById('btn-'+nome).classList.add('ativo');
+  document.getElementById('barraLateral').classList.remove('aberto');
   if(nome==='lista') renderizarListaProtocolos();
   if(nome==='recebimento') renderizarListaRecebimento();
   if(nome==='estoque') renderizarEstoque();
@@ -355,8 +398,9 @@ function atualizarPainel(){
   document.getElementById('qtdProg').textContent = listaProgramacaoAtual.length;
   const hoje = dataHoje();
   document.getElementById('recHoje').textContent = estoque.filter(i=>i.dataRecebimento===hoje).length;
-  document.getElementById('saidaHoje').textContent = historicoSaidas.filter(s=>s.data===hoje).reduce((ac,s)=>ac + s.itens.length,0);
+  document.getElementById('saidaHoje').textContent = historicoSaidas.filter(s=>s.data===hoje).reduce((ac,s)=>ac + (s.itens?s.itens.length:0),0);
 }
+
 function analisarProtocolo(){
   const texto = document.getElementById('textoProtocolo').value.trim();
   const tipo = document.getElementById('tipoProtocolo').value;
@@ -458,11 +502,11 @@ function limparProtocolo(){
   document.getElementById('areaResultado').style.display='none';
   delete window.protocoloAtual;
 }
-function salvarProtocolo(){
+async function salvarProtocolo(){
   if(!window.protocoloAtual) return alert('Analise o protocolo primeiro!');
   protocolosSalvos.unshift(window.protocoloAtual);
-  salvarDados();
-  alert('✅ PROTOCOLO SALVO!');
+  await salvarDados();
+  alert('✅ PROTOCOLO SALVO — Disponível para todos!');
   limparProtocolo();
 }
 function filtrarProtocolos(filtro){
@@ -481,9 +525,10 @@ function renderizarListaProtocolos(){
     return `<div class="bloco-protocolo"><div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center"><span class="tipo-protocolo ${p.tipo.includes('KIT')?'tipo-kit':p.tipo.includes('DUAL')?'tipo-dual':'tipo-gps'}">${p.tipo}</span><span>📅 ${p.data}</span><span>Pendente: ${total-rec}</span><span>Recebido: ${rec}/${total}</span><button class="botao-vermelho" onclick="excluirProtocolo(${idx})">🗑️</button></div><small>Chassi: ${p.chassi.join(', ')}</small><div style="margin-top:8px">${p.etiquetas.map(e=>{let cls='etiqueta ';cls+=e.tipo.includes('Pen')?'etiqueta-pen':e.tipo.includes('KIT')?'etiqueta-kit':e.tipo.includes('DUAL')?'etiqueta-dual':'etiqueta-gps';if(e.recebido)cls+=' etiqueta-recebida';return`<span class="${cls}">${e.et}</span>`;}).join(' ')}</div></div>`;
   }).join('');
 }
-function excluirProtocolo(idx){
-  if(confirm('Excluir esse protocolo?')){ protocolosSalvos.splice(idx,1); salvarDados(); renderizarListaProtocolos(); }
+async function excluirProtocolo(idx){
+  if(confirm('Excluir esse protocolo?')){ protocolosSalvos.splice(idx,1); await salvarDados(); }
 }
+
 function renderizarListaRecebimento(){
   const div = document.getElementById('listaRecebimento');
   let todosItens = [];
@@ -500,7 +545,7 @@ function renderizarListaRecebimento(){
     return `<div class="${clsLinha}"><span class="${clsEt}">${item.et} — ${item.modelo.substring(0,25)}</span><small style="color:#FFB800">${item.chassi}</small><strong>📍 ${item.localizacao||'A DEFINIR'}</strong><span>${item.recebido?'✅ RECEBIDO':'⏳ PENDENTE'}</span></div>`;
   }).join('');
 }
-function processarBipagem(){
+async function processarBipagem(){
   const texto = document.getElementById('caixaBipagem').value.toUpperCase().trim();
   const endereco = document.getElementById('enderecoRecebimento').value.trim() || 'A DEFINIR';
   if(!texto) return alert('Digite ou cole as etiquetas!');
@@ -519,17 +564,16 @@ function processarBipagem(){
       });
     });
   });
-  salvarDados();
+  await salvarDados();
   document.getElementById('caixaBipagem').value='';
   document.getElementById('enderecoRecebimento').value='';
-  alert(`✅ ${cont} etiqueta(s) recebida(s)!`);
-  renderizarListaRecebimento();
+  alert(`✅ ${cont} etiqueta(s) recebida(s)! Sincronizado com todos.`);
 }
 function limparBipagem(){
   document.getElementById('caixaBipagem').value='';
   document.getElementById('enderecoRecebimento').value='';
 }
-function salvarRecebimentoManual(){
+async function salvarRecebimentoManual(){
   const et = document.getElementById('man-etiqueta').value.trim().toUpperCase();
   const tipo = document.getElementById('man-tipo').value;
   const chassi = document.getElementById('man-chassi').value.trim().toUpperCase();
@@ -543,7 +587,7 @@ function salvarRecebimentoManual(){
   else if(tipo==='GPS') tipoTexto='📡 GPS';
   else if(tipo==='PEN') tipoTexto='💾 Pen Drive';
   estoque.unshift({etiqueta:et, tipo:tipoTexto, chassi:chassi, modelo:modelo, localizacao:local, dataRecebimento: dataHoje()});
-  salvarDados();
+  await salvarDados();
   alert('✅ Salvo no Estoque!');
   document.getElementById('man-etiqueta').value='';
   document.getElementById('man-chassi').value='';
@@ -551,7 +595,7 @@ function salvarRecebimentoManual(){
   document.getElementById('man-local').value='';
   abrirPagina('estoque');
 }
-function baixarLayoutExcel(){
+  function baixarLayoutExcel(){
   let csv = 'ETIQUETA;TIPO;CHASSI;MODELO;LOCALIZAÇÃO\n';
   csv += 'CX01-ABC123;📦 KIT;HCCXXXXXXXXXXXX;KIT EIXO;RUA 01 — B05\n';
   csv += 'DD-ABC123;🛞 DUAL;HCCXXXXXXXXXXXX;PNEU 480/80;RUA 02 — B08\n';
@@ -564,273 +608,334 @@ function baixarLayoutExcel(){
   a.click();
   URL.revokeObjectURL(url);
 }
-async function importarDoExcel(event){
-  const arquivo = event.target.files[0];
-  if(!arquivo) return;
-  const texto = await arquivo.text();
-  const linhas = texto.split(/\r?\n/).map(l=>l.trim()).filter(l=>l.length>5 && !l.startsWith('ETIQUETA'));
-  let cont=0;
-  linhas.forEach(ln=>{
-    const pts = ln.split(';');
-    if(pts.length>=2){
-      let et = pts[0]?.trim().toUpperCase();
-      let tp = pts[1]?.trim() || '📦 KIT';
-      let ch = pts[2]?.trim().toUpperCase();
-      let md = pts[3]?.trim() || 'Sem informação';
-      let lc = pts[4]?.trim() || 'A DEFINIR';
-      if(et && ch){
-        estoque.unshift({etiqueta:et, tipo:tp, chassi:ch, modelo:md, localizacao:lc, dataRecebimento: dataHoje()});
-        cont++;
-      }
-    }
-  });
-  salvarDados();
-  alert(`✅ ${cont} itens importados do Excel!`);
-  renderizarEstoque();
-  event.target.value='';
-}
+
 function renderizarEstoque(){
   const div = document.getElementById('listaEstoque');
   let lista = estoque;
   const filtroTxt = document.getElementById('buscaEstoque').value.toUpperCase().trim();
   const filtroTipo = document.getElementById('filtroTipoEstoque').value;
+  
   if(filtroTxt){
-    lista = estoque.filter(i=>i.etiqueta.includes(filtroTxt)||i.chassi.includes(filtroTxt)||i.modelo.toUpperCase().includes(filtroTxt)||i.localizacao.toUpperCase().includes(filtroTxt));
+    lista = estoque.filter(i=>
+      (i.etiqueta||'').includes(filtroTxt) ||
+      (i.chassi||'').includes(filtroTxt) ||
+      (i.modelo||'').includes(filtroTxt) ||
+      (i.localizacao||'').includes(filtroTxt)
+    );
   }
-  if(filtroTipo!=='TODOS') lista = lista.filter(i=>i.tipo.includes(filtroTipo));
+  if(filtroTipo !== 'TODOS'){
+    lista = lista.filter(i=>(i.tipo||'').includes(filtroTipo));
+  }
+  
   document.getElementById('totalEstoque').textContent = lista.length;
+  
   if(!lista.length) return div.innerHTML='Nenhum item encontrado.';
-  div.innerHTML = lista.map((item,i)=>{
-    let cls='etiqueta ';
-    cls += item.tipo.includes('Pen')?'etiqueta-pen':item.tipo.includes('KIT')?'etiqueta-kit':item.tipo.includes('DUAL')?'etiqueta-dual':'etiqueta-gps';
-    const sel = estoqueSelecionados.has(i)?'style="background:#2a2a4a"':'';
-    return `<div class="linha-estoque" ${sel}><input type="checkbox" class="chk" ${estoqueSelecionados.has(i)?'checked':''} onchange="toggleEstoque(${i})"><span class="${cls}">${item.etiqueta} — ${item.modelo.substring(0,25)}</span><small style="color:#FFB800">${item.chassi}</small><input type="text" class="input-loc" value="${item.localizacao}" onblur="salvarLocalizacao(${i},this.value)"><small>${item.dataRecebimento}</small></div>`;
+  
+  div.innerHTML = lista.map((item,idx)=>{
+    const sel = estoqueSelecionados.has(idx);
+    return `<div class="linha-estoque">
+      <input type="checkbox" class="chk" ${sel?'checked':''} onchange="toggleSelecaoEstoque(${idx})">
+      <span class="etiqueta ${item.tipo.includes('KIT')?'etiqueta-kit':item.tipo.includes('DUAL')?'etiqueta-dual':item.tipo.includes('GPS')||item.tipo.includes('Pen')?'etiqueta-gps':'etiqueta-pen'}">${item.etiqueta}</span>
+      <strong>${item.tipo}</strong>
+      <small>Chassi: ${item.chassi}</small>
+      <small>${item.modelo.substring(0,35)}</small>
+      <input type="text" class="input-loc" value="${item.localizacao||''}" onchange="mudarLocalIndividual(${idx}, this.value)" placeholder="Local">
+      <button class="botao-vermelho" onclick="removerDoEstoque(${idx})">🗑️</button>
+    </div>`;
   }).join('');
 }
-function toggleEstoque(idx){
-  estoqueSelecionados.has(idx) ? estoqueSelecionados.delete(idx) : estoqueSelecionados.add(idx);
+
+function filtrarEstoque(){
   renderizarEstoque();
 }
+
+function toggleSelecaoEstoque(idx){
+  if(estoqueSelecionados.has(idx)) estoqueSelecionados.delete(idx);
+  else estoqueSelecionados.add(idx);
+}
+
 function selecionarTodosEstoque(){
-  estoqueSelecionados.size === estoque.length ? estoqueSelecionados.clear() : estoque.forEach((_,i)=>estoqueSelecionados.add(i));
+  const filtroTxt = document.getElementById('buscaEstoque').value.toUpperCase().trim();
+  const filtroTipo = document.getElementById('filtroTipoEstoque').value;
+  let lista = estoque;
+  if(filtroTxt) lista = lista.filter(i=
+    (i.etiqueta||'').includes(filtroTxt) || (i.chassi||'').includes(filtroTxt)
+  );
+  if(filtroTipo!=='TODOS') lista = lista.filter(i=>(i.tipo||'').includes(filtroTipo));
+  
+  if(estoqueSelecionados.size === lista.length){
+    estoqueSelecionados.clear();
+  } else {
+    lista.forEach((_,i)=>estoqueSelecionados.add(estoque.indexOf(lista[i])));
+  }
   renderizarEstoque();
 }
-function salvarLocalizacao(idx, valor){
-  estoque[idx].localizacao = valor.trim() || 'A DEFINIR';
-  salvarDados();
+
+async function mudarLocalIndividual(idx, novoLocal){
+  estoque[idx].localizacao = novoLocal;
+  await salvarDados();
 }
-function mudarLocalizacaoEmMassa(){
+
+async function mudarLocalizacaoEmMassa(){
   if(!estoqueSelecionados.size) return alert('Selecione os itens primeiro!');
-  const nova = prompt('Digite a nova localização:');
-  if(!nova) return;
-  estoqueSelecionados.forEach(idx=>{ estoque[idx].localizacao = nova.trim(); });
-  salvarDados();
+  const novoLocal = prompt('Digite a nova localização:');
+  if(!novoLocal) return;
+  estoqueSelecionados.forEach(i=>{estoque[i].localizacao = novoLocal;});
+  await salvarDados();
   estoqueSelecionados.clear();
   renderizarEstoque();
   alert('✅ Localização atualizada!');
 }
-function filtrarEstoque(){ renderizarEstoque(); }
-function importarEstoqueEmMassa(){
-  const texto = document.getElementById('importaMassa').value.trim().toUpperCase();
-  if(!texto) return alert('Cole as etiquetas! Formato: ETIQUETA|CHASSI|TIPO|MODELO|LOCALIZACAO (um por linha)');
-  const linhas = texto.split(/[\r\n]+/).map(l=>l.trim()).filter(l=>l.length>5);
-  let cont=0;
-  linhas.forEach(ln=>{
-    const pts = ln.split('|');
-    if(pts.length>=2){
-      let et = pts[0].trim().toUpperCase();
-      let ch = pts[1].trim().toUpperCase();
-      let tp = pts[2]?pts[2].trim():'📦 KIT';
-      let md = pts[3]?pts[3].trim():'Sem informação';
-      let lc = pts[4]?pts[4].trim():'A DEFINIR';
-      if(!tp.includes('📦') && !tp.includes('🛞') && !tp.includes('📡') && !tp.includes('💾')){
-        if(tp.includes('KIT')) tp='📦 KIT';
-        else if(tp.includes('DUAL') || tp.includes('DD') || tp.includes('DT')) tp='🛞 DUAL';
-        else if(tp.includes('PEN') || tp.includes('PD')) tp='💾 Pen Drive';
-        else tp='📡 GPS';
-      }
-      estoque.unshift({etiqueta:et, tipo:tp, chassi:ch, modelo:md, localizacao:lc, dataRecebimento: dataHoje()});
-      cont++;
-    }
-  });
-  salvarDados();
-  document.getElementById('importaMassa').value='';
-  alert(`✅ ${cont} itens importados!`);
-  renderizarEstoque();
+
+function exportarSelecionadosEstoque(){
+  if(!estoqueSelecionados.size) return alert('Selecione os itens!');
+  const selecionados = Array.from(estoqueSelecionados).map(i=>estoque[i]);
+  exportarLista(selecionados, 'ESTOQUE_SELECIONADO');
 }
-function exportarExcel(dados, nomeArquivo){
-  let csv = 'ETIQUETA;TIPO;CHASSI;MODELO;LOCALIZAÇÃO;DATA\n';
-  dados.forEach(i=>{
-    csv += `${i.etiqueta};${i.tipo};${i.chassi};${i.modelo};${i.localizacao};${i.dataRecebimento||''}\n`;
+
+function exportarTodoEstoque(){
+  exportarLista(estoque, 'ESTOQUE_COMPLETO');
+}
+
+function exportarLista(lista, nomeArquivo){
+  let csv = 'ETIQUETA;TIPO;CHASSI;MODELO;LOCALIZAÇÃO;DATA_RECEBIMENTO\n';
+  lista.forEach(i=>{
+    csv += `${i.etiqueta||''};${i.tipo||''};${i.chassi||''};${(i.modelo||'').replace(/;/g,',')};${i.localizacao||''};${i.dataRecebimento||''}\n`;
   });
   const blob = new Blob(['\ufeff'+csv], {type:'text/csv;charset=utf-8'});
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = nomeArquivo + '_' + dataHoje().replace(/\//g,'-') + '.csv';
+  a.download = `${nomeArquivo}_${dataHoje().replace(/\//g,'-')}.csv`;
   a.click();
   URL.revokeObjectURL(url);
 }
-function exportarSelecionadosEstoque(){
-  if(!estoqueSelecionados.size) return alert('Selecione os itens primeiro!');
-  const itens = Array.from(estoqueSelecionados).map(i=>estoque[i]);
-  exportarExcel(itens, 'Estoque_Selecionados');
+
+async function importarEstoqueEmMassa(){
+  const texto = document.getElementById('importaMassa').value.trim();
+  if(!texto) return alert('Cole os dados no campo!');
+  const linhas = texto.split(/\r?\n/).map(l=>l.trim()).filter(l=>l);
+  let cont=0;
+  linhas.forEach(ln=>{
+    const partes = ln.split(/[|;]/);
+    if(partes.length<3) return;
+    const [etiqueta, chassi, tipo, modelo, local] = partes;
+    estoque.unshift({
+      etiqueta: (etiqueta||'').toUpperCase().trim(),
+      tipo: tipo||'—',
+      chassi: (chassi||'').toUpperCase().trim(),
+      modelo: modelo||'—',
+      localizacao: local||'A DEFINIR',
+      dataRecebimento: dataHoje()
+    });
+    cont++;
+  });
+  await salvarDados();
+  document.getElementById('importaMassa').value='';
+  alert(`✅ ${cont} itens importados!`);
 }
-function exportarTodoEstoque(){
-  exportarExcel(estoque, 'Estoque_Completo');
+
+async function removerDoEstoque(idx){
+  if(!confirm('Remover este item do estoque?')) return;
+  estoque.splice(idx,1);
+  estoqueSelecionados.clear();
+  await salvarDados();
 }
+
+// === PROGRAMAÇÃO ===
 function limparProgramacao(){
   document.getElementById('listaChassiProg').value='';
   document.getElementById('areaProgramacao').style.display='none';
-  listaProgramacaoAtual=[];
+  listaProgramacaoAtual = [];
   salvarDados();
 }
+
 function buscarItensParaProgramacao(){
-  const texto = document.getElementById('listaChassiProg').value.trim().toUpperCase();
-  if(!texto) return alert('Cole os Chassi primeiro!');
-  const listaChassi = texto.split(/[\r\n]+/).map(l=>l.trim()).filter(l=>l.length>10 && l.startsWith('HCC'));
-  if(!listaChassi.length) return alert('Não encontrei Chassi HCC...');
-  listaProgramacaoAtual=[];
-  listaChassi.forEach(chassi=>{
-    estoque.filter(i=>i.chassi===chassi).forEach(item=>{
-      listaProgramacaoAtual.push({...item, separado:false});
-    });
+  const texto = document.getElementById('listaChassiProg').value.toUpperCase().trim();
+  if(!texto) return alert('Cole os Chassi!');
+  const chassis = texto.split(/\r?\n/).map(l=>l.trim()).filter(l=>l.length>5);
+  const encontrados = [];
+  const naoEncontrados = [];
+  
+  chassis.forEach(ch=>{
+    const itensDoChassi = estoque.filter(i=>(i.chassi||'').startsWith(ch) || (i.chassi||'').includes(ch));
+    if(itensDoChassi.length>0) encontrados.push(...itensDoChassi.map(i=>({...i, separado:false})));
+    else naoEncontrados.push(ch);
   });
-  if(!listaProgramacaoAtual.length) return alert('Nenhum item encontrado em Estoque!');
-  document.getElementById('areaProgramacao').style.display='block';
+  
+  listaProgramacaoAtual = encontrados;
   salvarDados();
-  atualizarTelaProgramacao();
+  
+  document.getElementById('areaProgramacao').style.display='block';
+  document.getElementById('progTotal').textContent = encontrados.length;
+  document.getElementById('progChassi').textContent = [...new Set(chassis)].length;
+  
+  if(naoEncontrados.length>0){
+    alert(`⚠️ ${naoEncontrados.length} Chassi sem itens no estoque:\n${naoEncontrados.slice(0,5).join('\n')}${naoEncontrados.length>5?'\n...':''}`);
+  }
+  
+  renderizarProgramacao();
 }
-function atualizarTelaProgramacao(){
-  document.getElementById('progTotal').textContent = listaProgramacaoAtual.length;
-  document.getElementById('progChassi').textContent = [...new Set(listaProgramacaoAtual.map(i=>i.chassi))].length;
+
+function renderizarProgramacao(){
   const div = document.getElementById('listaProgramacao');
-  div.innerHTML = listaProgramacaoAtual.map((item,i)=>{
-    let cls='etiqueta ';
-    cls += item.tipo.includes('Pen')?'etiqueta-pen':item.tipo.includes('KIT')?'etiqueta-kit':item.tipo.includes('DUAL')?'etiqueta-dual':'etiqueta-gps';
-    return `<div style="padding:8px;border-bottom:1px solid #333"><span class="${cls}">${item.etiqueta} — ${item.modelo.substring(0,25)}</span><small style="color:#FFB800">${item.chassi}</small><strong>📍 ${item.localizacao}</strong></div>`;
-  }).join('');
+  if(!listaProgramacaoAtual.length) return div.innerHTML='<p>Nenhum item na programação.</p>';
+  div.innerHTML = listaProgramacaoAtual.map((item,idx)=>`
+    <div class="linha-prog ${item.separado?'separado':''}">
+      <input type="checkbox" class="chk" ${item.separado?'checked':''} onchange="marcarSeparado(${idx})">
+      <span class="etiqueta ${item.tipo.includes('KIT')?'etiqueta-kit':item.tipo.includes('DUAL')?'etiqueta-dual':'etiqueta-gps'}">${item.etiqueta}</span>
+      <strong>${item.tipo}</strong>
+      <small>Chassi: ${item.chassi}</small>
+      <small>${item.modelo.substring(0,30)}</small>
+      <span>📍 ${item.localizacao}</span>
+    </div>
+  `).join('');
 }
-function exportarProgramacao(tipo){
+
+function marcarSeparado(idx){
+  listaProgramacaoAtual[idx].separado = !listaProgramacaoAtual[idx].separado;
+  salvarDados();
+  renderizarProgramacao();
+}
+
+function exportarProgramacao(filtro){
   let lista = listaProgramacaoAtual;
-  if(tipo==='KIT') lista = lista.filter(i=>i.tipo.includes('KIT'));
-  else if(tipo==='DUAL') lista = lista.filter(i=>i.tipo.includes('DUAL'));
-  else if(tipo==='GPS') lista = lista.filter(i=>i.tipo.includes('GPS')||i.tipo.includes('Pen'));
-  if(!lista.length) return alert('Nenhum item desse tipo na programação!');
-  exportarExcel(lista, 'Programacao_'+tipo);
+  if(filtro!=='TODOS') lista = lista.filter(i=>(i.tipo||'').includes(filtro));
+  exportarLista(lista, `PROGRAMACAO_${filtro}`);
 }
-function confirmarProgramacao(){
-  if(!listaProgramacaoAtual.length) return alert('Busque os itens primeiro!');
-  if(!confirm(`✅ ${listaProgramacaoAtual.length} itens enviados para Separação/Baixa!\n\nEles NÃO serão baixados do Estoque ainda.\nBipe na aba SAÍDAS para dar baixa.`)) return;
-  alert('✅ Enviado para a aba SAÍDAS! Vá em Saídas para bipar e dar baixa.');
+
+async function confirmarProgramacao(){
+  if(!listaProgramacaoAtual.length) return alert('Nenhum item para enviar!');
+  if(!confirm(`Confirma ${listaProgramacaoAtual.length} itens para Separação/Baixa?`)) return;
+  await salvarDados();
+  alert('✅ Enviado para Separação! Vá na aba "Separação e Baixa"');
   abrirPagina('saidas');
 }
-function filtrarSaidas(tipo){
-  filtroSaidas = tipo;
-  document.querySelectorAll('#pag-saidas .filtros button').forEach(b=>b.classList.remove('ativo'));
+
+// === SAÍDAS / BAIXA ===
+function filtrarSaidas(filtro){
+  filtroSaidas = filtro;
+  document.querySelectorAll('.filtros button').forEach(b=>b.classList.remove('ativo'));
   event.target.classList.add('ativo');
   renderizarSaidasBaixa();
 }
+
+function renderizarSaidasBaixa(){
+  const div = document.getElementById('listaSaidasProgramadas');
+  let lista = listaProgramacaoAtual;
+  if(filtroSaidas!=='TODOS') lista = lista.filter(i=>(i.tipo||'').includes(filtroSaidas));
+  
+  const bipados = (document.getElementById('bipagemSaida').value||'').toUpperCase().trim().split(/\r?\n/).map(l=>l.trim()).filter(l=>l);
+  const setBipados = new Set(bipados);
+  
+  document.getElementById('saidaTotal').textContent = lista.length;
+  document.getElementById('saidaBipado').textContent = lista.filter(i=>setBipados.has(i.etiqueta)).length;
+  document.getElementById('saidaPendente').textContent = lista.filter(i=>!setBipados.has(i.etiqueta)).length;
+  
+  if(!lista.length) return div.innerHTML='<p>Nenhum item programado para saída.</p>';
+  
+  div.innerHTML = lista.map(item=>{
+    const ok = setBipados.has(item.etiqueta);
+    return `<div class="linha-prog ${ok?'separado':''}">
+      <span class="etiqueta ${item.tipo.includes('KIT')?'etiqueta-kit':item.tipo.includes('DUAL')?'etiqueta-dual':'etiqueta-gps'}">${ok?'✅ ':'⚠️ '}${item.etiqueta}</span>
+      <strong>${item.tipo}</strong>
+      <small>Chassi: ${item.chassi}</small>
+      <small>${item.modelo.substring(0,30)}</small>
+      <span>📍 ${item.localizacao}</span>
+    </div>`;
+  }).join('');
+}
+
 function marcarSeparadosSaida(){
-  const texto = document.getElementById('bipagemSaida').value.toUpperCase().trim();
-  if(!texto){
-    listaProgramacaoAtual.forEach(i=>i.separado=false);
-    renderizarSaidasBaixa();
-    return;
-  }
-  const codigos = texto.split(/[\r\n]+/).map(l=>l.trim()).filter(l=>l.length>3);
-  listaProgramacaoAtual.forEach(item=>{
-    item.separado = codigos.some(cod => cod === item.etiqueta.toUpperCase());
-  });
   renderizarSaidasBaixa();
 }
-function renderizarSaidasBaixa(){
-  let lista = listaProgramacaoAtual;
-  if(filtroSaidas==='KIT') lista = lista.filter(i=>i.tipo.includes('KIT'));
-  else if(filtroSaidas==='DUAL') lista = lista.filter(i=>i.tipo.includes('DUAL'));
-  else if(filtroSaidas==='GPS') lista = lista.filter(i=>i.tipo.includes('GPS')||i.tipo.includes('Pen'));
-  const total = lista.length;
-  const bipados = lista.filter(i=>i.separado).length;
-  document.getElementById('saidaTotal').textContent = total;
-  document.getElementById('saidaPendente').textContent = total - bipados;
-  document.getElementById('saidaBipado').textContent = bipados;
-  const div = document.getElementById('listaSaidasProgramadas');
-  if(!listaProgramacaoAtual.length) return div.innerHTML='Nenhum item enviado da Programação.';
-  div.innerHTML = lista.map(item=>{
-    let cls='etiqueta ';
-    cls += item.tipo.includes('Pen')?'etiqueta-pen':item.tipo.includes('KIT')?'etiqueta-kit':item.tipo.includes('DUAL')?'etiqueta-dual':'etiqueta-gps';
-    if(item.separado) cls += ' etiqueta-recebida';
-    return `<div class="linha-prog ${item.separado?'separado':''}"><span class="${cls}">${item.etiqueta} — ${item.modelo.substring(0,25)}</span><small style="color:#FFB800">${item.chassi}</small><strong>📍 ${item.localizacao}</strong><span>${item.separado?'✅ BIPADO':'⏳ PENDENTE — BIPE OBRIGATÓRIO'}</span></div>`;
-  }).join('');
-}
-function confirmarBaixaEstoque(){
-  const naoBipados = listaProgramacaoAtual.filter(i=>!i.separado);
-  if(naoBipados.length > 0) {
-    return alert(`❌ NÃO PODE CONFIRMAR!\nFaltam ${naoBipados.length} itens serem BIPADOS!\nBipe TODAS as etiquetas primeiro — é obrigatório!`);
+
+async function confirmarBaixaEstoque(){
+  const bipados = (document.getElementById('bipagemSaida').value||'').toUpperCase().trim().split(/\r?\n/).map(l=>l.trim()).filter(l=>l);
+  if(!bipados.length) return alert('Bipe as etiquetas primeiro!');
+  
+  const setBipados = new Set(bipados);
+  const todosBipados = listaProgramacaoAtual.every(i=>setBipados.has(i.etiqueta));
+  
+  if(!todosBipados){
+    if(!confirm('⚠️ Nem todos foram bipados! Deseja baixar SOMENTE os bipados?')) return;
   }
-  if(!confirm(`✅ Todos os ${listaProgramacaoAtual.length} itens foram bipados!\nRetirar do Estoque e registrar Saída?`)) return;
-  const etiquetasSaida = listaProgramacaoAtual.map(i=>i.etiqueta);
-  estoque = estoque.filter(i=>!etiquetasSaida.includes(i.etiqueta));
-  historicoSaidas.unshift({data: dataHoje(), itens: listaProgramacaoAtual, chassis: [...new Set(listaProgramacaoAtual.map(i=>i.chassi))]});
+  
+  const itensParaBaixar = listaProgramacaoAtual.filter(i=>setBipados.has(i.etiqueta));
+  if(!itensParaBaixar.length) return alert('Nenhum item válido!');
+  
+  itensParaBaixar.forEach(item=>{
+    const idxEstoque = estoque.findIndex(e=>e.etiqueta === item.etiqueta);
+    if(idxEstoque !== -1) estoque.splice(idxEstoque,1);
+  });
+  
+  historicoSaidas.unshift({
+    data: dataHoje(),
+    hora: new Date().toLocaleTimeString('pt-BR'),
+    itens: itensParaBaixar
+  });
+  
   listaProgramacaoAtual = [];
-  salvarDados();
-  alert(`✅ ${etiquetasSaida.length} itens retirados do Estoque!`);
   document.getElementById('bipagemSaida').value='';
-  abrirPagina('painel');
+  
+  await salvarDados();
+  alert(`✅ BAIXA CONCLUÍDA! ${itensParaBaixar.length} itens retirados do estoque.`);
 }
+
+// === INVENTÁRIO ===
 function abrirAbaInventario(tipo){
   inventarioSelecionadoTipo = tipo;
-  document.querySelectorAll('#pag-inventario .aba-int').forEach(b=>b.classList.remove('ativa'));
+  document.querySelectorAll('.abas-internas .aba-int').forEach(b=>b.classList.remove('ativo'));
   event.target.classList.add('ativa');
+  document.getElementById('tipoInv').textContent = tipo==='DUAL'?'🛞 DUAL':tipo==='KIT'?'📦 KITS':'📡 GPS / PEN';
   renderizarInventario();
 }
+
 function renderizarInventario(){
   const div = document.getElementById('listaInventario');
-  let lista = estoque.filter(i=>{
-    if(inventarioSelecionadoTipo==='DUAL') return i.tipo.includes('DUAL');
-    if(inventarioSelecionadoTipo==='KIT') return i.tipo.includes('KIT');
-    if(inventarioSelecionadoTipo==='GPS') return i.tipo.includes('GPS') || i.tipo.includes('Pen');
-    return true;
-  });
-  document.getElementById('tipoInv').textContent = inventarioSelecionadoTipo==='DUAL'?'🛞 DUAL':inventarioSelecionadoTipo==='KIT'?'📦 KITS':'📡 GPS / PEN';
+  const lista = estoque.filter(i=>(i.tipo||'').includes(inventarioSelecionadoTipo));
   if(!lista.length) return div.innerHTML='Nenhum item encontrado.';
-  div.innerHTML = lista.map(item=>{
-    let cls='etiqueta ';
-    cls += item.tipo.includes('Pen')?'etiqueta-pen':item.tipo.includes('KIT')?'etiqueta-kit':item.tipo.includes('DUAL')?'etiqueta-dual':'etiqueta-gps';
-    return `<div style="padding:8px;border-bottom:1px solid #333"><span class="${cls}">${item.etiqueta} — ${item.modelo.substring(0,25)}</span><small style="color:#FFB800">${item.chassi}</small><strong>📍 ${item.localizacao}</strong><small>${item.dataRecebimento}</small></div>`;
-  }).join('');
+  div.innerHTML = lista.map(item=>`
+    <div class="linha-estoque">
+      <span class="etiqueta ${item.tipo.includes('KIT')?'etiqueta-kit':item.tipo.includes('DUAL')?'etiqueta-dual':'etiqueta-gps'}">${item.etiqueta}</span>
+      <strong>${item.tipo}</strong>
+      <small>Chassi: ${item.chassi}</small>
+      <small>${item.modelo.substring(0,30)}</small>
+      <span>📍 ${item.localizacao}</span>
+    </div>
+  `).join('');
 }
-function processarInventario(){
+
+async function processarInventario(){
   const texto = document.getElementById('caixaInventario').value.toUpperCase().trim();
-  const novaLoc = document.getElementById('locInventario').value.trim();
-  if(!texto) return alert('Bipe as etiquetas primeiro!');
-  if(!novaLoc) return alert('Digite a Localização!');
-  const codigos = texto.split(/[\r\n]+/).map(l=>l.trim()).filter(l=>l.length>3);
+  const novoLocal = document.getElementById('locInventario').value.trim();
+  if(!texto) return alert('Cole as etiquetas inventariadas!');
+  
+  const etiquetas = texto.split(/\r?\n/).map(l=>l.trim()).filter(l=>l);
   let cont=0;
-  codigos.forEach(etq=>{
-    const idx = estoque.findIndex(i=>i.etiqueta.toUpperCase()===etq);
-    if(idx!==-1){
-      estoque[idx].localizacao = novaLoc;
+  
+  etiquetas.forEach(et=>{
+    const idx = estoque.findIndex(i=>i.etiqueta === et);
+    if(idx !== -1 && novoLocal){
+      estoque[idx].localizacao = novoLocal;
       cont++;
     }
   });
-  salvarDados();
+  
+  await salvarDados();
   document.getElementById('caixaInventario').value='';
-  alert(`✅ ${cont} itens inventariados! Localização atualizada para: ${novaLoc}`);
+  alert(`✅ ${etiquetas.length} etiquetas processadas${novoLocal?` — ${cont} localização atualizada`:''}!`);
   renderizarInventario();
 }
+
 function exportarInventario(){
-  let lista = estoque.filter(i=>{
-    if(inventarioSelecionadoTipo==='DUAL') return i.tipo.includes('DUAL');
-    if(inventarioSelecionadoTipo==='KIT') return i.tipo.includes('KIT');
-    if(inventarioSelecionadoTipo==='GPS') return i.tipo.includes('GPS') || i.tipo.includes('Pen');
-    return true;
-  });
-  exportarExcel(lista, 'Inventario_' + inventarioSelecionadoTipo);
+  const lista = estoque.filter(i=>(i.tipo||'').includes(inventarioSelecionadoTipo));
+  exportarLista(lista, `INVENTARIO_${inventarioSelecionadoTipo}`);
 }
+
+// === INICIALIZAÇÃO ===
 window.onload = function(){
-  carregarDados();
-  atualizarPainel();
+  configurarListeners();
 };
 </script>
 </body>
