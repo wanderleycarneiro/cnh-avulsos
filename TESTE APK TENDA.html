@@ -1,0 +1,820 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CNH — Área de Avulsos</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:Arial,sans-serif}
+body{background:#1a1a1a;color:#eee}
+.sidebar{width:240px;background:#000;position:fixed;height:100vh;left:0;top:0;padding-top:20px}
+.sidebar h1{color:#FFB800;padding:0 20px 10px;font-size:22px}
+.sidebar p{color:#888;padding:0 20px 20px;font-size:13px}
+.sidebar button{width:100%;background:transparent;border:none;color:#ccc;padding:14px 20px;text-align:left;cursor:pointer;font-size:15px;border-left:3px solid transparent}
+.sidebar button:hover,.sidebar button.ativo{background:#222;border-left-color:#FFB800;color:#fff}
+.conteudo{margin-left:240px;padding:20px}
+.pagina{display:none}
+.pagina.ativa{display:block}
+.fileira{display:grid;grid-template-columns:repeat(4,1fr);gap:15px;margin-bottom:20px}
+.cartao{background:#2a2a2a;padding:20px;border-radius:8px;margin:10px 0}
+.valor{font-size:36px;font-weight:bold;color:#FFB800;margin-top:10px}
+button.botao-amarelo{background:#FFB800;color:#000;border:none;padding:10px 18px;border-radius:4px;cursor:pointer;font-weight:bold;font-size:14px;margin:3px}
+button.botao-amarelo:hover{background:#FFC900}
+button.botao-verde{background:#00C853;color:#000;border:none;padding:10px 18px;border-radius:4px;cursor:pointer;font-weight:bold;font-size:14px;margin:3px}
+button.botao-verde:hover{background:#69F0AE}
+button.botao-vermelho{background:#FF3D00;color:#fff;border:none;padding:8px 14px;border-radius:4px;cursor:pointer;font-size:13px;margin:3px}
+button.botao-cinza{background:#444;color:#fff;border:none;padding:10px 18px;border-radius:4px;cursor:pointer;font-size:14px;margin:3px}
+button.botao-azul{background:#0091EA;color:#fff;border:none;padding:8px 14px;border-radius:4px;cursor:pointer;font-size:13px;margin:3px}
+textarea,input,select{width:100%;padding:12px;background:#333;border:1px solid #555;color:#fff;border-radius:4px;margin:8px 0;font-size:14px}
+textarea.bipagem{min-height:120px;font-size:14px}
+.etiqueta{display:inline-block;background:#000;border:2px dashed #FFB800;padding:5px 8px;border-radius:4px;margin:3px;font-family:monospace;font-weight:bold;color:#FFB800;font-size:11px}
+.etiqueta-dual{border-color:#00BFFF;color:#00BFFF}
+.etiqueta-gps{border-color:#00C853;color:#69F0AE}
+.etiqueta-pen{border-color:#9C27B0;color:#CE93D8}
+.etiqueta-kit{border-color:#FFB800;color:#FFD700}
+.etiqueta-recebida{opacity:0.4;border-style:solid;text-decoration:line-through}
+.aviso{background:rgba(0,200,83,.1);border:1px solid #00C853;padding:12px;border-radius:4px;margin:10px 0;color:#69F0AE}
+.aviso-amarelo{background:rgba(255,184,0,.1);border:1px solid #FFB800;padding:12px;border-radius:4px;margin:10px 0;color:#FFD700}
+.aviso-azul{background:rgba(0,145,234,.1);border:1px solid #0091EA;padding:12px;border-radius:4px;margin:10px 0;color:#69D9FF}
+.aviso-vermelho{background:rgba(255,61,0,.1);border:1px solid #FF3D00;padding:12px;border-radius:4px;margin:10px 0;color:#FF6E40}
+.tipo-protocolo{display:inline-block;padding:6px 14px;border-radius:20px;font-weight:bold;margin-bottom:12px}
+.tipo-dual{background:rgba(0,191,255,.15);color:#00BFFF;border:1px solid #00BFFF}
+.tipo-kit{background:rgba(255,184,0,.15);color:#FFB800;border:1px solid #FFB800}
+.tipo-gps{background:rgba(0,200,83,.15);color:#00C853;border:1px solid #00C853}
+.bloco-protocolo{padding:14px;border:1px solid #444;border-radius:6px;margin-bottom:14px;background:#222}
+.filtros,.abas-internas{display:flex;gap:8px;margin-bottom:15px;flex-wrap:wrap;border-bottom:1px solid #444;padding-bottom:8px}
+.filtros button,.aba-int{padding:6px 12px;border-radius:20px;border:none;background:#333;color:#ccc;cursor:pointer}
+.filtros button.ativo,.aba-int.ativa{background:#FFB800;color:#000;font-weight:bold}
+.linha-bipagem{padding:8px;border-bottom:1px solid #333;display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.linha-bipagem.recebido{background:rgba(0,200,83,.05);border-left:3px solid #00C853}
+.linha-estoque{padding:10px;border-bottom:1px solid #333;display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.linha-prog{padding:10px;border-bottom:1px solid #333;background:rgba(0,145,234,.03);display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.linha-prog.separado{background:rgba(0,145,234,.1);border-left:3px solid #0091EA}
+.bloco-endereco{background:rgba(0,145,234,.08);border:1px solid #0091EA;padding:12px;border-radius:6px;margin:8px 0}
+.input-loc{width:140px;padding:4px;background:#333;border:1px solid #555;color:#fff;border-radius:3px}
+.chk{width:auto;transform:scale(1.2);margin:0;cursor:pointer}
+.resumo-prog{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:15px 0}
+.card-resumo{background:#222;padding:10px;border-radius:6px;text-align:center}
+.card-resumo .num{font-size:24px;font-weight:bold;color:#FFB800}
+hr{border:none;border-top:1px solid #444;margin:12px 0}
+</style>
+</head>
+<body>
+
+<div class="sidebar">
+  <h1>CNH</h1>
+  <p>Área de Avulsos</p>
+  <button onclick="abrirPagina('painel')" id="btn-painel" class="ativo">📊 Painel</button>
+  <button onclick="abrirPagina('cadastrar')" id="btn-cadastrar">📄 Cadastrar Protocolos</button>
+  <button onclick="abrirPagina('lista')" id="btn-lista">📑 Protocolos</button>
+  <button onclick="abrirPagina('recebimento')" id="btn-recebimento">📥 Recebimento</button>
+  <button onclick="abrirPagina('estoque')" id="btn-estoque">📦 Estoque</button>
+  <button onclick="abrirPagina('programacao')" id="btn-programacao">📋 Programação</button>
+  <button onclick="abrirPagina('saidas')" id="btn-saidas">🚚 Separação e Baixa</button>
+  <button onclick="abrirPagina('inventario')" id="btn-inventario">📋 Inventário</button>
+</div>
+
+<div class="conteudo">
+  <!-- PAINEL -->
+  <div id="pag-painel" class="pagina ativa">
+    <h2 style="margin-bottom:20px">Gestão de Avulsos e Expedição</h2>
+    <div class="fileira">
+      <div class="cartao"><h3>Protocolos</h3><div class="valor" id="qtdProtocolo">0</div></div>
+      <div class="cartao"><h3>Itens Pendentes</h3><div class="valor" id="qtdPendente">0</div></div>
+      <div class="cartao"><h3>Em Estoque</h3><div class="valor" id="qtdEstoque">0</div></div>
+      <div class="cartao"><h3>Em Programação</h3><div class="valor" id="qtdProg">0</div></div>
+    </div>
+    <div class="fileira">
+      <div class="cartao" style="background:rgba(0,200,83,.15)"><h3>✅ Recebidos Hoje</h3><div class="valor" id="recHoje">0</div></div>
+      <div class="cartao" style="background:rgba(0,145,234,.15)"><h3>🚚 Saídas do Dia</h3><div class="valor" id="saidaHoje">0</div></div>
+    </div>
+  </div>
+
+  <!-- CADASTRAR PROTOCOLOS -->
+  <div id="pag-cadastrar" class="pagina">
+    <h2 style="margin-bottom:20px">📄 Cadastrar Protocolos</h2>
+    <div class="cartao">
+      <label>📋 Tipo de Protocolo:</label>
+      <select id="tipoProtocolo">
+        <option value="KIT-TRATOR">📦 KIT — TRATOR</option>
+        <option value="KIT-PLATAFORMA">📦 KIT — PLATAFORMA</option>
+        <option value="KIT-COLHEITADEIRA">📦 KIT — COLHEITADEIRA</option>
+        <option value="DUAL" selected>🛞 DUAL</option>
+        <option value="GPS">📡 GPS / PEN DRIVE</option>
+      </select>
+      <label>📝 Observação (opcional):</label>
+      <input type="text" id="obsProtocolo" placeholder="Informações adicionais...">
+      <label>📋 Cole o protocolo aqui:</label>
+      <textarea id="textoProtocolo" rows="10" placeholder="Cole o texto do protocolo..."></textarea>
+      <br><br>
+      <button class="botao-amarelo" onclick="analisarProtocolo()">🔍 ANALISAR E GERAR ETIQUETAS</button>
+      <button class="botao-cinza" onclick="limparProtocolo()">🗑️ LIMPAR</button>
+      <div id="areaResultado" style="margin-top:20px;display:none">
+        <span id="badgeTipo" class="tipo-protocolo"></span>
+        <div class="aviso" id="resumoProtocolo"></div>
+        <div id="mostraObs" style="background:#333;padding:10px;border-radius:4px;margin:10px 0;display:none">
+          <strong>Observação:</strong> <span></span>
+        </div>
+        <h3 style="margin:15px 0 8px">Etiquetas Geradas:</h3>
+        <div id="listaEtiquetas"></div>
+        <br>
+        <button class="botao-amarelo" onclick="salvarProtocolo()">💾 SALVAR PROTOCOLO</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- LISTA DE PROTOCOLOS -->
+  <div id="pag-lista" class="pagina">
+    <h2 style="margin-bottom:15px">📑 Protocolos Cadastrados</h2>
+    <div class="filtros">
+      <button class="ativo" onclick="filtrarProtocolos('TODOS')">Todos</button>
+      <button onclick="filtrarProtocolos('KIT')">KIT</button>
+      <button onclick="filtrarProtocolos('DUAL')">DUAL</button>
+      <button onclick="filtrarProtocolos('GPS')">GPS</button>
+    </div>
+    <div class="cartao" id="listaProtocolos">Nenhum protocolo cadastrado.</div>
+  </div>
+
+  <!-- RECEBIMENTO -->
+  <div id="pag-recebimento" class="pagina">
+    <h2 style="margin-bottom:15px">📥 Recebimento</h2>
+    <div class="abas-internas">
+      <div class="aba-int ativo" onclick="abrirAbaRecebimento('protocolo')">📋 Por Protocolo</div>
+      <div class="aba-int" onclick="abrirAbaRecebimento('manual')">✋ Recebimento Manual</div>
+    </div>
+    <div id="aba-rec-protocolo">
+      <div class="cartao">
+        <label>🔍 Bipe ou cole etiquetas:</label>
+        <textarea id="caixaBipagem" class="bipagem" placeholder="DD-R8929&#10;DT-R8929"></textarea>
+        <div class="bloco-endereco">
+          <label>📍 Localização:</label>
+          <input type="text" id="enderecoRecebimento" placeholder="Ex: RUA 03 — B12">
+        </div>
+        <button class="botao-verde" onclick="processarBipagem()">✅ MARCAR RECEBIDO</button>
+        <button class="botao-cinza" onclick="limparBipagem()">🗑️ LIMPAR</button>
+        <p style="margin:10px 0">Pendentes: <span id="contPendente">0</span> | Recebidos: <span id="contRecebido">0</span></p>
+        <h3>Itens:</h3>
+        <div id="listaRecebimento"></div>
+      </div>
+    </div>
+    <div id="aba-rec-manual" style="display:none">
+      <div class="cartao">
+        <div class="aviso-amarelo">⚠️ Entrada direta no estoque</div>
+        <label>Etiqueta:</label><input type="text" id="man-etiqueta">
+        <label>Tipo:</label>
+        <select id="man-tipo">
+          <option value="KIT">📦 KIT</option>
+          <option value="DUAL-DIANT">🛞 DUAL Dianteiro</option>
+          <option value="DUAL-TRAS">🛞 DUAL Traseiro</option>
+          <option value="GPS">📡 GPS</option>
+          <option value="PEN">💾 Pen Drive</option>
+        </select>
+        <label>Chassi:</label><input type="text" id="man-chassi">
+        <label>Modelo/Info:</label><input type="text" id="man-modelo">
+        <label>Localização:</label><input type="text" id="man-local">
+        <button class="botao-verde" onclick="salvarRecebimentoManual()">✅ SALVAR</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ESTOQUE — COM IMPORTAÇÃO EXCEL -->
+  <div id="pag-estoque" class="pagina">
+    <h2 style="margin-bottom:15px">📦 Estoque</h2>
+    <div class="cartao">
+      <div class="aviso-amarelo">📥 Importar em Massa: ETIQUETA|CHASSI|TIPO|MODELO|LOCALIZAÇÃO (um por linha)</div>
+      <textarea id="importaMassa" rows="4" placeholder="CX01-R8929|HCCZ...|KIT|KIT EIXO|RUA 01&#10;DD-R8929|HCCZ...|DUAL|PNEU 480|RUA 02"></textarea>
+      <button class="botao-verde" onclick="importarEstoqueEmMassa()">📥 IMPORTAR TEXTO</button>
+      <button class="botao-azul" onclick="baixarLayoutExcel()">📄 BAIXAR LAYOUT EXCEL</button>
+      <button class="botao-amarelo" onclick="document.getElementById('arquivoExcel').click()">📂 IMPORTAR DO EXCEL</button>
+      <input type="file" id="arquivoExcel" accept=".csv,.txt" style="display:none" onchange="importarDoExcel(event)">
+      <hr>
+      <input type="text" placeholder="🔍 Buscar..." id="buscaEstoque" oninput="filtrarEstoque()">
+      <select id="filtroTipoEstoque" onchange="filtrarEstoque()">
+        <option value="TODOS">Todos</option>
+        <option value="KIT">KIT</option>
+        <option value="DUAL">DUAL</option>
+        <option value="GPS">GPS</option>
+        <option value="PEN">PEN</option>
+      </select>
+      <button class="botao-azul" onclick="selecionarTodosEstoque()">☑️ Todos</button>
+      <button class="botao-amarelo" onclick="mudarLocalizacaoEmMassa()">📍 Mudar Localização</button>
+      <button class="botao-verde" onclick="exportarSelecionadosEstoque()">📤 Exportar Selecionados</button>
+      <button class="botao-cinza" onclick="exportarTodoEstoque()">📤 Exportar Tudo</button>
+      <p style="margin:10px 0">Total: <span id="totalEstoque">0</span></p>
+      <div id="listaEstoque"></div>
+    </div>
+  </div>
+  <!-- PROGRAMAÇÃO — SEM BIPAGEM, SÓ ENVIA P/ SAÍDAS -->
+  <div id="pag-programacao" class="pagina">
+    <h2 style="margin-bottom:15px">📋 Programação de Embarque</h2>
+    <div class="cartao">
+      <div class="aviso-azul">🚜 Cole os Chassi — um por linha → Busca os itens do Estoque</div>
+      <textarea id="listaChassiProg" class="bipagem" placeholder="HCCZ...&#10;HCCZ..."></textarea>
+      <button class="botao-amarelo" onclick="buscarItensParaProgramacao()">🔍 BUSCAR ITENS</button>
+      <button class="botao-cinza" onclick="limparProgramacao()">🗑️ LIMPAR</button>
+      <div id="areaProgramacao" style="margin-top:15px;display:none">
+        <div class="resumo-prog">
+          <div class="card-resumo"><div class="num" id="progTotal">0</div><div>Itens</div></div>
+          <div class="card-resumo"><div class="num" id="progChassi">0</div><div>Chassi</div></div>
+        </div>
+        <div style="margin:10px 0">
+          <button class="botao-cinza" onclick="exportarProgramacao('TODOS')">📤 Exportar Todos</button>
+          <button class="botao-cinza" onclick="exportarProgramacao('KIT')">📤 Exportar Só KIT</button>
+          <button class="botao-cinza" onclick="exportarProgramacao('DUAL')">📤 Exportar Só DUAL</button>
+          <button class="botao-cinza" onclick="exportarProgramacao('GPS')">📤 Exportar Só GPS/PEN</button>
+        </div>
+        <h3>Itens da Programação:</h3>
+        <div id="listaProgramacao"></div>
+        <br>
+        <button class="botao-verde" style="font-size:16px;padding:12px 24px" onclick="confirmarProgramacao()">✅ ENVIAR P/ SAÍDAS (Sem baixa do Estoque)</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- SAÍDAS — AQUI BIPA E DÁ BAIXA NO ESTOQUE -->
+  <div id="pag-saidas" class="pagina">
+    <h2 style="margin-bottom:15px">🚚 Separação e Baixa</h2>
+    <div class="cartao">
+      <div class="filtros">
+        <button class="ativo" onclick="filtrarSaidas('TODOS')">Todos</button>
+        <button onclick="filtrarSaidas('DUAL')">🛞 DUAL</button>
+        <button onclick="filtrarSaidas('KIT')">📦 KITS</button>
+        <button onclick="filtrarSaidas('GPS')">📡 GPS / PEN</button>
+      </div>
+      <div class="aviso-vermelho">🔴 É OBRIGATÓRIO BIPAR TODAS AS ETIQUETAS PARA DAR BAIXA NO ESTOQUE!</div>
+      <label style="color:#FFB800; font-weight:bold">Bipe as etiquetas abaixo (código EXATO letra por letra):</label>
+      <textarea id="bipagemSaida" class="bipagem" placeholder="CX01-R8929&#10;DD-R8929" oninput="marcarSeparadosSaida()"></textarea>
+      <div class="resumo-prog">
+        <div class="card-resumo"><div class="num" id="saidaTotal">0</div><div>Itens</div></div>
+        <div class="card-resumo" style="background:rgba(255,61,0,.1)"><div class="num" id="saidaPendente">0</div><div>🔴 Pendentes</div></div>
+        <div class="card-resumo" style="background:rgba(0,200,83,.15)"><div class="num" id="saidaBipado">0</div><div>✅ Bipados</div></div>
+      </div>
+      <h3>Itens a Separar:</h3>
+      <div id="listaSaidasProgramadas"></div>
+      <br>
+      <button class="botao-verde" style="font-size:16px;padding:12px 24px" onclick="confirmarBaixaEstoque()">✅ CONFIRMAR BAIXA — SÓ FUNCIONA SE TODOS FOREM BIPADOS</button>
+    </div>
+  </div>
+
+  <!-- INVENTÁRIO -->
+  <div id="pag-inventario" class="pagina">
+    <h2 style="margin-bottom:15px">📋 Inventário</h2>
+    <div class="cartao">
+      <div class="abas-internas">
+        <div class="aba-int ativo" onclick="abrirAbaInventario('DUAL')">🛞 DUAL</div>
+        <div class="aba-int" onclick="abrirAbaInventario('KIT')">📦 KITS</div>
+        <div class="aba-int" onclick="abrirAbaInventario('GPS')">📡 GPS / PEN</div>
+      </div>
+      <h3 id="tipoInv">🛞 DUAL</h3>
+      <label>🔍 Bipe ou cole as etiquetas inventariadas:</label>
+      <textarea id="caixaInventario" class="bipagem" placeholder="DD-R8929&#10;CX01-R8929"></textarea>
+      <label>📍 Nova Localização (atualiza no Estoque):</label>
+      <input type="text" id="locInventario" placeholder="Ex: RUA 05 — B08">
+      <button class="botao-verde" onclick="processarInventario()">✅ INVENTARIAR E ATUALIZAR LOCALIZAÇÃO</button>
+      <button class="botao-azul" onclick="exportarInventario()">📤 EXPORTAR INVENTÁRIO</button>
+      <h3 style="margin:15px 0 8px">Itens em Estoque:</h3>
+      <div id="listaInventario"></div>
+    </div>
+  </div>
+</div>
+<script>
+let protocolosSalvos = [];
+let estoque = [];
+let historicoSaidas = [];
+let filtroAtivo = 'TODOS';
+let listaProgramacaoAtual = [];
+let filtroSaidas = 'TODOS';
+let estoqueSelecionados = new Set();
+let inventarioSelecionadoTipo = 'DUAL';
+const CODIGO_PEN_DRIVE = '47962967';
+
+function dataHoje(){
+  return new Date().toLocaleDateString('pt-BR');
+}
+function salvarDados(){
+  localStorage.setItem('cnh_protocolos', JSON.stringify(protocolosSalvos));
+  localStorage.setItem('cnh_estoque', JSON.stringify(estoque));
+  localStorage.setItem('cnh_saidas', JSON.stringify(historicoSaidas));
+  localStorage.setItem('cnh_programacao', JSON.stringify(listaProgramacaoAtual));
+  atualizarPainel();
+}
+function carregarDados(){
+  const p = localStorage.getItem('cnh_protocolos');
+  const e = localStorage.getItem('cnh_estoque');
+  const s = localStorage.getItem('cnh_saidas');
+  const prog = localStorage.getItem('cnh_programacao');
+  if(p) protocolosSalvos = JSON.parse(p);
+  if(e) estoque = JSON.parse(e);
+  if(s) historicoSaidas = JSON.parse(s);
+  if(prog) listaProgramacaoAtual = JSON.parse(prog);
+}
+function abrirPagina(nome){
+  document.querySelectorAll('.pagina').forEach(p=>p.classList.remove('ativa'));
+  document.querySelectorAll('.sidebar button').forEach(b=>b.classList.remove('ativo'));
+  document.getElementById('pag-'+nome).classList.add('ativa');
+  document.getElementById('btn-'+nome).classList.add('ativo');
+  if(nome==='lista') renderizarListaProtocolos();
+  if(nome==='recebimento') renderizarListaRecebimento();
+  if(nome==='estoque') renderizarEstoque();
+  if(nome==='saidas') renderizarSaidasBaixa();
+  if(nome==='inventario') renderizarInventario();
+}
+function abrirAbaRecebimento(aba){
+  document.querySelectorAll('.abas-internas .aba-int').forEach(b=>b.classList.remove('ativa'));
+  event.target.classList.add('ativa');
+  document.getElementById('aba-rec-protocolo').style.display = aba==='protocolo'?'block':'none';
+  document.getElementById('aba-rec-manual').style.display = aba==='manual'?'block':'none';
+}
+function pegarSufixo(chassi){
+  if(!chassi) return '';
+  return chassi.replace(/[^A-Z0-9]/gi,'').toUpperCase().slice(-6);
+}
+function atualizarPainel(){
+  document.getElementById('qtdProtocolo').textContent = protocolosSalvos.length;
+  let totalItens=0, totalRec=0;
+  protocolosSalvos.forEach(p=>{totalItens+=p.etiquetas.length; totalRec+=p.etiquetas.filter(e=>e.recebido).length;});
+  document.getElementById('qtdPendente').textContent = totalItens-totalRec;
+  document.getElementById('qtdEstoque').textContent = estoque.length;
+  document.getElementById('qtdProg').textContent = listaProgramacaoAtual.length;
+  const hoje = dataHoje();
+  document.getElementById('recHoje').textContent = estoque.filter(i=>i.dataRecebimento===hoje).length;
+  document.getElementById('saidaHoje').textContent = historicoSaidas.filter(s=>s.data===hoje).reduce((ac,s)=>ac + s.itens.length,0);
+}
+function analisarProtocolo(){
+  const texto = document.getElementById('textoProtocolo').value.trim();
+  const tipo = document.getElementById('tipoProtocolo').value;
+  const obs = document.getElementById('obsProtocolo').value.trim();
+  if(!texto) return alert('Cole o protocolo primeiro!');
+  const linhas = texto.split(/\r?\n/).map(l=>l.trim()).filter(l=>l.length>5);
+  const etiquetas = [];
+  const chassiUnicos = [];
+  const contagemChassi = {};
+  const dadosChassi = {};
+  const ehGPS = tipo === 'GPS';
+  const ehDUAL = tipo === 'DUAL';
+  const ehKIT = tipo.startsWith('KIT');
+  if(ehDUAL){
+    linhas.forEach(ln=>{
+      const mChassi = ln.match(/HCC[A-Z0-9]{10,}/i);
+      if(mChassi){
+        const chassi = mChassi[0].toUpperCase();
+        contagemChassi[chassi] = (contagemChassi[chassi]||0)+1;
+        const medida = ln.match(/(\d{1,3}\/\d{1,3}[A-Z0-9\/-]*)/i);
+        const marca = ln.match(/(GOODYEAR|PIRELLI|MICHELIN|BRIDGESTONE|CONTINENTAL)/i);
+        if(!dadosChassi[chassi]) dadosChassi[chassi] = [];
+        dadosChassi[chassi].push({medida:medida?medida[1].toUpperCase():'', marca:marca?marca[1].toUpperCase():''});
+      }
+    });
+    Object.keys(contagemChassi).forEach(chassi=>{
+      chassiUnicos.push(chassi);
+      const sf = pegarSufixo(chassi);
+      const qtde = contagemChassi[chassi];
+      const infos = dadosChassi[chassi];
+      if(qtde === 1){
+        etiquetas.push({et:'DT-'+sf, tipo:'🛞 DUAL — Traseiro', chassi, modelo: infos[0].medida + (infos[0].marca?' | '+infos[0].marca:''), recebido:false, localizacao:'', dataProtocolo: dataHoje()});
+      } else {
+        etiquetas.push({et:'DD-'+sf, tipo:'🛞 DUAL — Dianteiro', chassi, modelo: infos[0].medida + (infos[0].marca?' | '+infos[0].marca:''), recebido:false, localizacao:'', dataProtocolo: dataHoje()});
+        etiquetas.push({et:'DT-'+sf, tipo:'🛞 DUAL — Traseiro', chassi, modelo: infos[1]?infos[1].medida + (infos[1].marca?' | '+infos[1].marca:''):'', recebido:false, localizacao:'', dataProtocolo: dataHoje()});
+      }
+    });
+  } else if(ehGPS){
+    linhas.forEach(ln=>{
+      const mChassi = ln.match(/HCC[A-Z0-9]{10,}/i);
+      if(!mChassi) return;
+      const chassi = mChassi[0].toUpperCase();
+      chassiUnicos.push(chassi);
+      const codigos = [];
+      const regexCod = /\b(\d{8})\b/g;
+      let m;
+      while((m=regexCod.exec(ln))!==null) codigos.push(m[1]);
+      const codGPS = codigos.filter(c=>c!==CODIGO_PEN_DRIVE);
+      const temPen = codigos.includes(CODIGO_PEN_DRIVE) && codGPS.length===0;
+      const sf = pegarSufixo(chassi);
+      if(temPen){
+        etiquetas.push({et:'PD-'+sf, tipo:'💾 Pen Drive', chassi, modelo:'Cód: '+CODIGO_PEN_DRIVE, recebido:false, localizacao:'', dataProtocolo: dataHoje()});
+      } else if(codGPS.length>0){
+        codGPS.forEach(cod=>{
+          etiquetas.push({et:'GP-'+sf, tipo:'📡 GPS', chassi, modelo:'Cód: '+cod, recebido:false, localizacao:'', dataProtocolo: dataHoje()});
+        });
+      }
+    });
+  } else if(ehKIT){
+    linhas.forEach(ln=>{
+      const mChassi = ln.match(/HCC[A-Z0-9]{10,}/i);
+      if(!mChassi) return;
+      const chassi = mChassi[0].toUpperCase();
+      chassiUnicos.push(chassi);
+      const mQtde = ln.match(/Qtde[.\s]*Env[.\s]*[:\s]*(\d+)|(\d+)\s*$/i);
+      let qtde = mQtde ? parseInt(mQtde[1]||mQtde[2]) : 1;
+      if(qtde>99) qtde=1;
+      const mDesc = ln.match(/KIT[^\d\n\+-]*/i);
+      const desc = mDesc ? mDesc[0].trim().substring(0,40) : 'KIT';
+      const sf = pegarSufixo(chassi);
+      for(let i=1;i<=qtde;i++){
+        const n = String(i).padStart(2,'0');
+        etiquetas.push({et:'CX'+n+'-'+sf, tipo:'📦 KIT — Caixa '+n+' de '+qtde, chassi, modelo: desc, recebido:false, localizacao:'', dataProtocolo: dataHoje()});
+      }
+    });
+  }
+  if(chassiUnicos.length===0) return alert('Não encontrei Chassi HCC... Verifique o protocolo!');
+  const badge = document.getElementById('badgeTipo');
+  const nomes = {KIT:'📦 KIT',DUAL:'🛞 DUAL',GPS:'📡 GPS / PEN'};
+  badge.textContent = nomes[tipo.split('-')[0]] || tipo;
+  badge.className = 'tipo-protocolo '+(ehDUAL?'tipo-dual':ehKIT?'tipo-kit':'tipo-gps');
+  document.getElementById('resumoProtocolo').innerHTML = '✅ ' + [...new Set(chassiUnicos)].length + ' Chassi(s) → ' + etiquetas.length + ' Etiqueta(s)';
+  const divObs = document.getElementById('mostraObs');
+  if(obs){ divObs.style.display='block'; divObs.querySelector('span').textContent=obs; }
+  else divObs.style.display='none';
+  let html='';
+  etiquetas.forEach((item,i)=>{
+    let cls='etiqueta ';
+    cls+=item.tipo.includes('Pen')?'etiqueta-pen':item.tipo.includes('KIT')?'etiqueta-kit':item.tipo.includes('DUAL')?'etiqueta-dual':'etiqueta-gps';
+    html += `<div style="padding:8px 0;border-bottom:1px solid #333">${i+1}. ${item.tipo}<br><span class="${cls}">🏷️ ${item.et}</span><br><small style="color:#FFB800">Chassi: ${item.chassi}</small><br><strong style="color:#69F0AE">Conteúdo: ${item.modelo}</strong></div>`;
+  });
+  document.getElementById('listaEtiquetas').innerHTML = html;
+  document.getElementById('areaResultado').style.display='block';
+  window.protocoloAtual = {data: dataHoje(), tipo: badge.textContent, observacao: obs||'—', chassi: [...new Set(chassiUnicos)], etiquetas};
+}
+function limparProtocolo(){
+  document.getElementById('textoProtocolo').value='';
+  document.getElementById('obsProtocolo').value='';
+  document.getElementById('areaResultado').style.display='none';
+  delete window.protocoloAtual;
+}
+function salvarProtocolo(){
+  if(!window.protocoloAtual) return alert('Analise o protocolo primeiro!');
+  protocolosSalvos.unshift(window.protocoloAtual);
+  salvarDados();
+  alert('✅ PROTOCOLO SALVO!');
+  limparProtocolo();
+}
+function filtrarProtocolos(filtro){
+  filtroAtivo = filtro;
+  document.querySelectorAll('.filtros button').forEach(b=>b.classList.remove('ativo'));
+  event.target.classList.add('ativo');
+  renderizarListaProtocolos();
+}
+function renderizarListaProtocolos(){
+  const div = document.getElementById('listaProtocolos');
+  let lista = protocolosSalvos;
+  if(filtroAtivo!=='TODOS') lista = protocolosSalvos.filter(p=>p.tipo.includes(filtroAtivo));
+  if(!lista.length) return div.innerHTML='Nenhum protocolo encontrado.';
+  div.innerHTML = lista.map((p,idx)=>{
+    const total=p.etiquetas.length, rec=p.etiquetas.filter(e=>e.recebido).length;
+    return `<div class="bloco-protocolo"><div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center"><span class="tipo-protocolo ${p.tipo.includes('KIT')?'tipo-kit':p.tipo.includes('DUAL')?'tipo-dual':'tipo-gps'}">${p.tipo}</span><span>📅 ${p.data}</span><span>Pendente: ${total-rec}</span><span>Recebido: ${rec}/${total}</span><button class="botao-vermelho" onclick="excluirProtocolo(${idx})">🗑️</button></div><small>Chassi: ${p.chassi.join(', ')}</small><div style="margin-top:8px">${p.etiquetas.map(e=>{let cls='etiqueta ';cls+=e.tipo.includes('Pen')?'etiqueta-pen':e.tipo.includes('KIT')?'etiqueta-kit':e.tipo.includes('DUAL')?'etiqueta-dual':'etiqueta-gps';if(e.recebido)cls+=' etiqueta-recebida';return`<span class="${cls}">${e.et}</span>`;}).join(' ')}</div></div>`;
+  }).join('');
+}
+function excluirProtocolo(idx){
+  if(confirm('Excluir esse protocolo?')){ protocolosSalvos.splice(idx,1); salvarDados(); renderizarListaProtocolos(); }
+}
+function renderizarListaRecebimento(){
+  const div = document.getElementById('listaRecebimento');
+  let todosItens = [];
+  protocolosSalvos.forEach(p=>{p.etiquetas.forEach(e=>{todosItens.push({...e, tipoProtocolo:p.tipo});});});
+  const rec = todosItens.filter(i=>i.recebido).length;
+  document.getElementById('contRecebido').textContent = rec;
+  document.getElementById('contPendente').textContent = todosItens.length - rec;
+  if(!todosItens.length) return div.innerHTML='Nenhum item.';
+  div.innerHTML = todosItens.map(item=>{
+    let clsLinha = 'linha-bipagem' + (item.recebido?' recebido':'');
+    let clsEt = 'etiqueta ';
+    clsEt += item.tipoProtocolo.includes('Pen')?'etiqueta-pen':item.tipoProtocolo.includes('KIT')?'etiqueta-kit':item.tipoProtocolo.includes('DUAL')?'etiqueta-dual':'etiqueta-gps';
+    if(item.recebido) clsEt += ' etiqueta-recebida';
+    return `<div class="${clsLinha}"><span class="${clsEt}">${item.et} — ${item.modelo.substring(0,25)}</span><small style="color:#FFB800">${item.chassi}</small><strong>📍 ${item.localizacao||'A DEFINIR'}</strong><span>${item.recebido?'✅ RECEBIDO':'⏳ PENDENTE'}</span></div>`;
+  }).join('');
+}
+function processarBipagem(){
+  const texto = document.getElementById('caixaBipagem').value.toUpperCase().trim();
+  const endereco = document.getElementById('enderecoRecebimento').value.trim() || 'A DEFINIR';
+  if(!texto) return alert('Digite ou cole as etiquetas!');
+  if(endereco==='A DEFINIR' && !confirm('Sem localização. Usar "A DEFINIR"?')) return;
+  const codigos = texto.split(/[\r\n]+/).map(l=>l.trim()).filter(l=>l.length>3);
+  let cont = 0;
+  codigos.forEach(etq=>{
+    protocolosSalvos.forEach(p=>{
+      p.etiquetas.forEach(e=>{
+        if(e.et.toUpperCase()===etq && !e.recebido){
+          e.recebido = true;
+          e.localizacao = endereco;
+          cont++;
+          estoque.unshift({etiqueta:e.et, tipo:e.tipo, chassi:e.chassi, modelo:e.modelo, localizacao:endereco, dataRecebimento: dataHoje()});
+        }
+      });
+    });
+  });
+  salvarDados();
+  document.getElementById('caixaBipagem').value='';
+  document.getElementById('enderecoRecebimento').value='';
+  alert(`✅ ${cont} etiqueta(s) recebida(s)!`);
+  renderizarListaRecebimento();
+}
+function limparBipagem(){
+  document.getElementById('caixaBipagem').value='';
+  document.getElementById('enderecoRecebimento').value='';
+}
+function salvarRecebimentoManual(){
+  const et = document.getElementById('man-etiqueta').value.trim().toUpperCase();
+  const tipo = document.getElementById('man-tipo').value;
+  const chassi = document.getElementById('man-chassi').value.trim().toUpperCase();
+  const modelo = document.getElementById('man-modelo').value.trim() || 'Sem informação';
+  const local = document.getElementById('man-local').value.trim() || 'A DEFINIR';
+  if(!et || !chassi) return alert('Preencha Etiqueta e Chassi!');
+  let tipoTexto = '';
+  if(tipo==='KIT') tipoTexto='📦 KIT';
+  else if(tipo==='DUAL-DIANT') tipoTexto='🛞 DUAL — Dianteiro';
+  else if(tipo==='DUAL-TRAS') tipoTexto='🛞 DUAL — Traseiro';
+  else if(tipo==='GPS') tipoTexto='📡 GPS';
+  else if(tipo==='PEN') tipoTexto='💾 Pen Drive';
+  estoque.unshift({etiqueta:et, tipo:tipoTexto, chassi:chassi, modelo:modelo, localizacao:local, dataRecebimento: dataHoje()});
+  salvarDados();
+  alert('✅ Salvo no Estoque!');
+  document.getElementById('man-etiqueta').value='';
+  document.getElementById('man-chassi').value='';
+  document.getElementById('man-modelo').value='';
+  document.getElementById('man-local').value='';
+  abrirPagina('estoque');
+}
+function baixarLayoutExcel(){
+  let csv = 'ETIQUETA;TIPO;CHASSI;MODELO;LOCALIZAÇÃO\n';
+  csv += 'CX01-ABC123;📦 KIT;HCCXXXXXXXXXXXX;KIT EIXO;RUA 01 — B05\n';
+  csv += 'DD-ABC123;🛞 DUAL;HCCXXXXXXXXXXXX;PNEU 480/80;RUA 02 — B08\n';
+  csv += 'GP-ABC123;📡 GPS;HCCXXXXXXXXXXXX;Cód: 12345678;RUA 03 — B10\n';
+  const blob = new Blob(['\ufeff'+csv], {type:'text/csv;charset=utf-8'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'LAYOUT_ESTOQUE_' + dataHoje().replace(/\//g,'-') + '.csv';
+  a.click();
+  URL.revokeObjectURL(url);
+}
+async function importarDoExcel(event){
+  const arquivo = event.target.files[0];
+  if(!arquivo) return;
+  const texto = await arquivo.text();
+  const linhas = texto.split(/\r?\n/).map(l=>l.trim()).filter(l=>l.length>5 && !l.startsWith('ETIQUETA'));
+  let cont=0;
+  linhas.forEach(ln=>{
+    const pts = ln.split(';');
+    if(pts.length>=2){
+      let et = pts[0]?.trim().toUpperCase();
+      let tp = pts[1]?.trim() || '📦 KIT';
+      let ch = pts[2]?.trim().toUpperCase();
+      let md = pts[3]?.trim() || 'Sem informação';
+      let lc = pts[4]?.trim() || 'A DEFINIR';
+      if(et && ch){
+        estoque.unshift({etiqueta:et, tipo:tp, chassi:ch, modelo:md, localizacao:lc, dataRecebimento: dataHoje()});
+        cont++;
+      }
+    }
+  });
+  salvarDados();
+  alert(`✅ ${cont} itens importados do Excel!`);
+  renderizarEstoque();
+  event.target.value='';
+}
+function renderizarEstoque(){
+  const div = document.getElementById('listaEstoque');
+  let lista = estoque;
+  const filtroTxt = document.getElementById('buscaEstoque').value.toUpperCase().trim();
+  const filtroTipo = document.getElementById('filtroTipoEstoque').value;
+  if(filtroTxt){
+    lista = estoque.filter(i=>i.etiqueta.includes(filtroTxt)||i.chassi.includes(filtroTxt)||i.modelo.toUpperCase().includes(filtroTxt)||i.localizacao.toUpperCase().includes(filtroTxt));
+  }
+  if(filtroTipo!=='TODOS') lista = lista.filter(i=>i.tipo.includes(filtroTipo));
+  document.getElementById('totalEstoque').textContent = lista.length;
+  if(!lista.length) return div.innerHTML='Nenhum item encontrado.';
+  div.innerHTML = lista.map((item,i)=>{
+    let cls='etiqueta ';
+    cls += item.tipo.includes('Pen')?'etiqueta-pen':item.tipo.includes('KIT')?'etiqueta-kit':item.tipo.includes('DUAL')?'etiqueta-dual':'etiqueta-gps';
+    const sel = estoqueSelecionados.has(i)?'style="background:#2a2a4a"':'';
+    return `<div class="linha-estoque" ${sel}><input type="checkbox" class="chk" ${estoqueSelecionados.has(i)?'checked':''} onchange="toggleEstoque(${i})"><span class="${cls}">${item.etiqueta} — ${item.modelo.substring(0,25)}</span><small style="color:#FFB800">${item.chassi}</small><input type="text" class="input-loc" value="${item.localizacao}" onblur="salvarLocalizacao(${i},this.value)"><small>${item.dataRecebimento}</small></div>`;
+  }).join('');
+}
+function toggleEstoque(idx){
+  estoqueSelecionados.has(idx) ? estoqueSelecionados.delete(idx) : estoqueSelecionados.add(idx);
+  renderizarEstoque();
+}
+function selecionarTodosEstoque(){
+  estoqueSelecionados.size === estoque.length ? estoqueSelecionados.clear() : estoque.forEach((_,i)=>estoqueSelecionados.add(i));
+  renderizarEstoque();
+}
+function salvarLocalizacao(idx, valor){
+  estoque[idx].localizacao = valor.trim() || 'A DEFINIR';
+  salvarDados();
+}
+function mudarLocalizacaoEmMassa(){
+  if(!estoqueSelecionados.size) return alert('Selecione os itens primeiro!');
+  const nova = prompt('Digite a nova localização:');
+  if(!nova) return;
+  estoqueSelecionados.forEach(idx=>{ estoque[idx].localizacao = nova.trim(); });
+  salvarDados();
+  estoqueSelecionados.clear();
+  renderizarEstoque();
+  alert('✅ Localização atualizada!');
+}
+function filtrarEstoque(){ renderizarEstoque(); }
+function importarEstoqueEmMassa(){
+  const texto = document.getElementById('importaMassa').value.trim().toUpperCase();
+  if(!texto) return alert('Cole as etiquetas! Formato: ETIQUETA|CHASSI|TIPO|MODELO|LOCALIZACAO (um por linha)');
+  const linhas = texto.split(/[\r\n]+/).map(l=>l.trim()).filter(l=>l.length>5);
+  let cont=0;
+  linhas.forEach(ln=>{
+    const pts = ln.split('|');
+    if(pts.length>=2){
+      let et = pts[0].trim().toUpperCase();
+      let ch = pts[1].trim().toUpperCase();
+      let tp = pts[2]?pts[2].trim():'📦 KIT';
+      let md = pts[3]?pts[3].trim():'Sem informação';
+      let lc = pts[4]?pts[4].trim():'A DEFINIR';
+      if(!tp.includes('📦') && !tp.includes('🛞') && !tp.includes('📡') && !tp.includes('💾')){
+        if(tp.includes('KIT')) tp='📦 KIT';
+        else if(tp.includes('DUAL') || tp.includes('DD') || tp.includes('DT')) tp='🛞 DUAL';
+        else if(tp.includes('PEN') || tp.includes('PD')) tp='💾 Pen Drive';
+        else tp='📡 GPS';
+      }
+      estoque.unshift({etiqueta:et, tipo:tp, chassi:ch, modelo:md, localizacao:lc, dataRecebimento: dataHoje()});
+      cont++;
+    }
+  });
+  salvarDados();
+  document.getElementById('importaMassa').value='';
+  alert(`✅ ${cont} itens importados!`);
+  renderizarEstoque();
+}
+function exportarExcel(dados, nomeArquivo){
+  let csv = 'ETIQUETA;TIPO;CHASSI;MODELO;LOCALIZAÇÃO;DATA\n';
+  dados.forEach(i=>{
+    csv += `${i.etiqueta};${i.tipo};${i.chassi};${i.modelo};${i.localizacao};${i.dataRecebimento||''}\n`;
+  });
+  const blob = new Blob(['\ufeff'+csv], {type:'text/csv;charset=utf-8'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = nomeArquivo + '_' + dataHoje().replace(/\//g,'-') + '.csv';
+  a.click();
+  URL.revokeObjectURL(url);
+}
+function exportarSelecionadosEstoque(){
+  if(!estoqueSelecionados.size) return alert('Selecione os itens primeiro!');
+  const itens = Array.from(estoqueSelecionados).map(i=>estoque[i]);
+  exportarExcel(itens, 'Estoque_Selecionados');
+}
+function exportarTodoEstoque(){
+  exportarExcel(estoque, 'Estoque_Completo');
+}
+function limparProgramacao(){
+  document.getElementById('listaChassiProg').value='';
+  document.getElementById('areaProgramacao').style.display='none';
+  listaProgramacaoAtual=[];
+  salvarDados();
+}
+function buscarItensParaProgramacao(){
+  const texto = document.getElementById('listaChassiProg').value.trim().toUpperCase();
+  if(!texto) return alert('Cole os Chassi primeiro!');
+  const listaChassi = texto.split(/[\r\n]+/).map(l=>l.trim()).filter(l=>l.length>10 && l.startsWith('HCC'));
+  if(!listaChassi.length) return alert('Não encontrei Chassi HCC...');
+  listaProgramacaoAtual=[];
+  listaChassi.forEach(chassi=>{
+    estoque.filter(i=>i.chassi===chassi).forEach(item=>{
+      listaProgramacaoAtual.push({...item, separado:false});
+    });
+  });
+  if(!listaProgramacaoAtual.length) return alert('Nenhum item encontrado em Estoque!');
+  document.getElementById('areaProgramacao').style.display='block';
+  salvarDados();
+  atualizarTelaProgramacao();
+}
+function atualizarTelaProgramacao(){
+  document.getElementById('progTotal').textContent = listaProgramacaoAtual.length;
+  document.getElementById('progChassi').textContent = [...new Set(listaProgramacaoAtual.map(i=>i.chassi))].length;
+  const div = document.getElementById('listaProgramacao');
+  div.innerHTML = listaProgramacaoAtual.map((item,i)=>{
+    let cls='etiqueta ';
+    cls += item.tipo.includes('Pen')?'etiqueta-pen':item.tipo.includes('KIT')?'etiqueta-kit':item.tipo.includes('DUAL')?'etiqueta-dual':'etiqueta-gps';
+    return `<div style="padding:8px;border-bottom:1px solid #333"><span class="${cls}">${item.etiqueta} — ${item.modelo.substring(0,25)}</span><small style="color:#FFB800">${item.chassi}</small><strong>📍 ${item.localizacao}</strong></div>`;
+  }).join('');
+}
+function exportarProgramacao(tipo){
+  let lista = listaProgramacaoAtual;
+  if(tipo==='KIT') lista = lista.filter(i=>i.tipo.includes('KIT'));
+  else if(tipo==='DUAL') lista = lista.filter(i=>i.tipo.includes('DUAL'));
+  else if(tipo==='GPS') lista = lista.filter(i=>i.tipo.includes('GPS')||i.tipo.includes('Pen'));
+  if(!lista.length) return alert('Nenhum item desse tipo na programação!');
+  exportarExcel(lista, 'Programacao_'+tipo);
+}
+function confirmarProgramacao(){
+  if(!listaProgramacaoAtual.length) return alert('Busque os itens primeiro!');
+  if(!confirm(`✅ ${listaProgramacaoAtual.length} itens enviados para Separação/Baixa!\n\nEles NÃO serão baixados do Estoque ainda.\nBipe na aba SAÍDAS para dar baixa.`)) return;
+  alert('✅ Enviado para a aba SAÍDAS! Vá em Saídas para bipar e dar baixa.');
+  abrirPagina('saidas');
+}
+function filtrarSaidas(tipo){
+  filtroSaidas = tipo;
+  document.querySelectorAll('#pag-saidas .filtros button').forEach(b=>b.classList.remove('ativo'));
+  event.target.classList.add('ativo');
+  renderizarSaidasBaixa();
+}
+function marcarSeparadosSaida(){
+  const texto = document.getElementById('bipagemSaida').value.toUpperCase().trim();
+  if(!texto){
+    listaProgramacaoAtual.forEach(i=>i.separado=false);
+    renderizarSaidasBaixa();
+    return;
+  }
+  const codigos = texto.split(/[\r\n]+/).map(l=>l.trim()).filter(l=>l.length>3);
+  listaProgramacaoAtual.forEach(item=>{
+    item.separado = codigos.some(cod => cod === item.etiqueta.toUpperCase());
+  });
+  renderizarSaidasBaixa();
+}
+function renderizarSaidasBaixa(){
+  let lista = listaProgramacaoAtual;
+  if(filtroSaidas==='KIT') lista = lista.filter(i=>i.tipo.includes('KIT'));
+  else if(filtroSaidas==='DUAL') lista = lista.filter(i=>i.tipo.includes('DUAL'));
+  else if(filtroSaidas==='GPS') lista = lista.filter(i=>i.tipo.includes('GPS')||i.tipo.includes('Pen'));
+  const total = lista.length;
+  const bipados = lista.filter(i=>i.separado).length;
+  document.getElementById('saidaTotal').textContent = total;
+  document.getElementById('saidaPendente').textContent = total - bipados;
+  document.getElementById('saidaBipado').textContent = bipados;
+  const div = document.getElementById('listaSaidasProgramadas');
+  if(!listaProgramacaoAtual.length) return div.innerHTML='Nenhum item enviado da Programação.';
+  div.innerHTML = lista.map(item=>{
+    let cls='etiqueta ';
+    cls += item.tipo.includes('Pen')?'etiqueta-pen':item.tipo.includes('KIT')?'etiqueta-kit':item.tipo.includes('DUAL')?'etiqueta-dual':'etiqueta-gps';
+    if(item.separado) cls += ' etiqueta-recebida';
+    return `<div class="linha-prog ${item.separado?'separado':''}"><span class="${cls}">${item.etiqueta} — ${item.modelo.substring(0,25)}</span><small style="color:#FFB800">${item.chassi}</small><strong>📍 ${item.localizacao}</strong><span>${item.separado?'✅ BIPADO':'⏳ PENDENTE — BIPE OBRIGATÓRIO'}</span></div>`;
+  }).join('');
+}
+function confirmarBaixaEstoque(){
+  const naoBipados = listaProgramacaoAtual.filter(i=>!i.separado);
+  if(naoBipados.length > 0) {
+    return alert(`❌ NÃO PODE CONFIRMAR!\nFaltam ${naoBipados.length} itens serem BIPADOS!\nBipe TODAS as etiquetas primeiro — é obrigatório!`);
+  }
+  if(!confirm(`✅ Todos os ${listaProgramacaoAtual.length} itens foram bipados!\nRetirar do Estoque e registrar Saída?`)) return;
+  const etiquetasSaida = listaProgramacaoAtual.map(i=>i.etiqueta);
+  estoque = estoque.filter(i=>!etiquetasSaida.includes(i.etiqueta));
+  historicoSaidas.unshift({data: dataHoje(), itens: listaProgramacaoAtual, chassis: [...new Set(listaProgramacaoAtual.map(i=>i.chassi))]});
+  listaProgramacaoAtual = [];
+  salvarDados();
+  alert(`✅ ${etiquetasSaida.length} itens retirados do Estoque!`);
+  document.getElementById('bipagemSaida').value='';
+  abrirPagina('painel');
+}
+function abrirAbaInventario(tipo){
+  inventarioSelecionadoTipo = tipo;
+  document.querySelectorAll('#pag-inventario .aba-int').forEach(b=>b.classList.remove('ativa'));
+  event.target.classList.add('ativa');
+  renderizarInventario();
+}
+function renderizarInventario(){
+  const div = document.getElementById('listaInventario');
+  let lista = estoque.filter(i=>{
+    if(inventarioSelecionadoTipo==='DUAL') return i.tipo.includes('DUAL');
+    if(inventarioSelecionadoTipo==='KIT') return i.tipo.includes('KIT');
+    if(inventarioSelecionadoTipo==='GPS') return i.tipo.includes('GPS') || i.tipo.includes('Pen');
+    return true;
+  });
+  document.getElementById('tipoInv').textContent = inventarioSelecionadoTipo==='DUAL'?'🛞 DUAL':inventarioSelecionadoTipo==='KIT'?'📦 KITS':'📡 GPS / PEN';
+  if(!lista.length) return div.innerHTML='Nenhum item encontrado.';
+  div.innerHTML = lista.map(item=>{
+    let cls='etiqueta ';
+    cls += item.tipo.includes('Pen')?'etiqueta-pen':item.tipo.includes('KIT')?'etiqueta-kit':item.tipo.includes('DUAL')?'etiqueta-dual':'etiqueta-gps';
+    return `<div style="padding:8px;border-bottom:1px solid #333"><span class="${cls}">${item.etiqueta} — ${item.modelo.substring(0,25)}</span><small style="color:#FFB800">${item.chassi}</small><strong>📍 ${item.localizacao}</strong><small>${item.dataRecebimento}</small></div>`;
+  }).join('');
+}
+function processarInventario(){
+  const texto = document.getElementById('caixaInventario').value.toUpperCase().trim();
+  const novaLoc = document.getElementById('locInventario').value.trim();
+  if(!texto) return alert('Bipe as etiquetas primeiro!');
+  if(!novaLoc) return alert('Digite a Localização!');
+  const codigos = texto.split(/[\r\n]+/).map(l=>l.trim()).filter(l=>l.length>3);
+  let cont=0;
+  codigos.forEach(etq=>{
+    const idx = estoque.findIndex(i=>i.etiqueta.toUpperCase()===etq);
+    if(idx!==-1){
+      estoque[idx].localizacao = novaLoc;
+      cont++;
+    }
+  });
+  salvarDados();
+  document.getElementById('caixaInventario').value='';
+  alert(`✅ ${cont} itens inventariados! Localização atualizada para: ${novaLoc}`);
+  renderizarInventario();
+}
+function exportarInventario(){
+  let lista = estoque.filter(i=>{
+    if(inventarioSelecionadoTipo==='DUAL') return i.tipo.includes('DUAL');
+    if(inventarioSelecionadoTipo==='KIT') return i.tipo.includes('KIT');
+    if(inventarioSelecionadoTipo==='GPS') return i.tipo.includes('GPS') || i.tipo.includes('Pen');
+    return true;
+  });
+  exportarExcel(lista, 'Inventario_' + inventarioSelecionadoTipo);
+}
+window.onload = function(){
+  carregarDados();
+  atualizarPainel();
+};
+</script>
+</body>
+</html>
